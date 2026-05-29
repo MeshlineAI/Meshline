@@ -1,0 +1,55 @@
+import "dotenv/config";
+
+function require(key: string): string {
+  const val = process.env[key];
+  if (!val) throw new Error(`Missing required env var: ${key}`);
+  return val;
+}
+
+function optional(key: string, fallback: string): string {
+  return process.env[key] ?? fallback;
+}
+
+export const config = {
+  port: parseInt(optional("PORT", "3001")),
+  nodeEnv: optional("NODE_ENV", "development"),
+
+  db: {
+    url: process.env.DATABASE_URL!,
+  },
+
+  base: {
+    rpcUrl: process.env.BASE_RPC_URL!,
+    basescanApiKey: process.env.BASESCAN_API_KEY!,
+    basescanUrl: "https://api.basescan.org/api",
+    chainId: 8453,
+  },
+
+  ai: {
+    geminiApiKey: process.env.GEMINI_API_KEY!,
+    model: optional("GEMINI_MODEL", "gemini-1.5-flash"),
+  },
+
+  eas: {
+    privateKey: process.env.EAS_PRIVATE_KEY,
+    schemaUid: process.env.EAS_SCHEMA_UID,
+    contractAddress: optional(
+      "EAS_CONTRACT_ADDRESS",
+      "0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587"
+    ),
+    schemaRegistryAddress: optional(
+      "EAS_SCHEMA_REGISTRY_ADDRESS",
+      "0x720c2bA66D19A725143FBf5fDC5b4B4eE8490538"
+    ),
+  },
+
+  payment: {
+    treasuryAddress: process.env.TREASURY_ADDRESS,
+    facilitatorUrl: optional("X402_FACILITATOR_URL", "https://x402.org/facilitate"),
+    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`,
+  },
+
+  github: {
+    token: process.env.GITHUB_TOKEN,
+  },
+} as const;
