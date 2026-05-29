@@ -1,5 +1,12 @@
 # Meshline
 
+![CI](https://github.com/MeshlineAI/Meshline/actions/workflows/backend.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Bun](https://img.shields.io/badge/Bun-1.x-000000?logo=bun&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
+![Base](https://img.shields.io/badge/Base-L2-0052FF?logo=coinbase&logoColor=white)
+
 **AI-powered onchain risk intelligence for Base.**
 
 Paste a contract address, wallet, or Base app URL. Get a risk report in under 30 seconds.

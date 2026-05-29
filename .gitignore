@@ -1,1 +1,31 @@
+# env files
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Next.js
+.next/
+out/
+
+# Node / Bun
+node_modules/
+bun.lockb
+
+# Build artifacts
+dist/
+build/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/lib/
+contracts/broadcast/
+
+# Misc
+.DS_Store
+*.pem
+.vercel
+
+# Docs
 /docs
