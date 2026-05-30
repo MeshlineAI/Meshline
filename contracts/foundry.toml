@@ -5,6 +5,9 @@ libs = ["lib"]
 test = "test"
 script = "script"
 solc_version = "0.8.24"
+remappings = [
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
+]
 
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"

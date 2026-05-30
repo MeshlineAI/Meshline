@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { x402Gate } from "../middleware/x402";
+import { freeTierGate } from "../middleware/freeTier";
 import { fetchContractData, fetchWalletData, fetchAppData } from "../services/onchain/fetch";
 import * as contractSignals from "../services/signals/contract";
 import * as walletSignals from "../services/signals/wallet";
@@ -93,7 +94,7 @@ router.get(
     }
     next();
   },
-  x402Gate("0.001", "Contract Intel scan"),
+  freeTierGate("contract", x402Gate("0.001", "Contract Intel scan")),
   async (req, res) => {
     try {
       const address = req.params.address as `0x${string}`;
@@ -117,7 +118,7 @@ router.get(
     }
     next();
   },
-  x402Gate("0.001", "Wallet Intel scan"),
+  freeTierGate("wallet", x402Gate("0.001", "Wallet Intel scan")),
   async (req, res) => {
     try {
       const address = req.params.address as `0x${string}`;

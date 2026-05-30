@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { x402Gate } from "../middleware/x402";
 import { pool } from "../db";
 
 const router = Router();
 
-router.get<{ uid: string }>("/:uid", x402Gate("0.001", "Report retrieval"), async (req, res) => {
+// Public — no x402. Reports are permanently shareable, no login required.
+router.get<{ uid: string }>("/:uid", async (req, res) => {
   try {
     const uid = req.params.uid;
     if (!/^[0-9a-f-]{36}$/.test(uid)) {
@@ -12,7 +12,8 @@ router.get<{ uid: string }>("/:uid", x402Gate("0.001", "Report retrieval"), asyn
     }
 
     const result = await pool.query(
-      `SELECT id, target, scan_type, mesh_score, tier, report_json, report_markdown, report_hash, eas_uid, report_url, created_at
+      `SELECT id, target, scan_type, mesh_score, tier, report_json,
+              report_markdown, report_hash, eas_uid, report_url, created_at
        FROM scans WHERE id = $1`,
       [uid]
     );
