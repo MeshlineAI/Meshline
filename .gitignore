@@ -32,4 +32,5 @@ contracts/broadcast/
 
 # Internal dev docs — not for git
 frontend-integration.md
+frontend-integration-*.md
 tech-updates.md
