@@ -9,6 +9,7 @@
 
 import axios from "axios";
 import { config } from "../../config";
+import { cache, TTL } from "./cache";
 import type { BaseTx, TokenApproval } from "../../types";
 
 // ── Rate limiter (token bucket, 4 req/s) ─────────────────────────────────────
@@ -74,102 +75,112 @@ export interface TokenHolder {
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
 export async function getSourceCode(address: string): Promise<ContractSource | null> {
-  const results = await get<ContractSource[]>({
-    module: "contract",
-    action: "getsourcecode",
-    address,
+  return cache.getOrFetch(`src:${address}`, TTL.CONTRACT_SOURCE, async () => {
+    const results = await get<ContractSource[]>({
+      module: "contract",
+      action: "getsourcecode",
+      address,
+    });
+    return Array.isArray(results) && results.length > 0 ? results[0] : null;
   });
-  return Array.isArray(results) && results.length > 0 ? results[0] : null;
 }
 
 export async function getContractCreation(address: string): Promise<ContractCreation | null> {
-  const results = await get<ContractCreation[]>({
-    module: "contract",
-    action: "getcontractcreation",
-    contractaddresses: address,
+  return cache.getOrFetch(`creation:${address}`, TTL.CONTRACT_CREATION, async () => {
+    const results = await get<ContractCreation[]>({
+      module: "contract",
+      action: "getcontractcreation",
+      contractaddresses: address,
+    });
+    return Array.isArray(results) && results.length > 0 ? results[0] : null;
   });
-  return Array.isArray(results) && results.length > 0 ? results[0] : null;
 }
 
 export async function getContractsByDeployer(deployer: string): Promise<string[]> {
-  const txs = await get<BaseTx[]>({
-    module: "account",
-    action: "txlist",
-    address: deployer,
-    startblock: "0",
-    endblock: "latest",
-    sort: "desc",
-    offset: "100",
-    page: "1",
+  return cache.getOrFetch(`deployer:${deployer}`, TTL.CONTRACT_SOURCE, async () => {
+    const txs = await get<BaseTx[]>({
+      module: "account",
+      action: "txlist",
+      address: deployer,
+      startblock: "0",
+      endblock: "latest",
+      sort: "desc",
+      offset: "100",
+      page: "1",
+    });
+    if (!Array.isArray(txs)) return [];
+    return txs.filter((tx) => !tx.to || tx.to === "").map((tx) => tx.hash);
   });
-  if (!Array.isArray(txs)) return [];
-  return txs
-    .filter((tx) => !tx.to || tx.to === "")
-    .map((tx) => tx.hash);
 }
 
 export async function getTokenHolders(address: string): Promise<TokenHolder[]> {
-  try {
-    return await get<TokenHolder[]>({
-      module: "token",
-      action: "tokenholderlist",
-      contractaddress: address,
-      page: "1",
-      offset: "50",
-    });
-  } catch {
-    return [];
-  }
+  return cache.getOrFetch(`holders:${address}`, TTL.TOKEN_HOLDERS, async () => {
+    try {
+      return await get<TokenHolder[]>({
+        module: "token",
+        action: "tokenholderlist",
+        contractaddress: address,
+        page: "1",
+        offset: "50",
+      });
+    } catch {
+      return [];
+    }
+  });
 }
 
 export async function getTransactions(address: string, limit = 50): Promise<BaseTx[]> {
   const cap = Math.min(limit, 1000);
-  const txs = await get<BaseTx[]>({
-    module: "account",
-    action: "txlist",
-    address,
-    startblock: "0",
-    endblock: "latest",
-    sort: "desc",
-    offset: String(cap),
-    page: "1",
-  });
-  return Array.isArray(txs) ? txs : [];
-}
-
-export async function getTokenTransactions(address: string): Promise<TokenApproval[]> {
-  try {
-    const logs = await get<any[]>({
+  return cache.getOrFetch(`txs:${address}:${cap}`, TTL.TRANSACTIONS, async () => {
+    const txs = await get<BaseTx[]>({
       module: "account",
-      action: "tokentx",
+      action: "txlist",
       address,
       startblock: "0",
       endblock: "latest",
       sort: "desc",
-      offset: "200",
+      offset: String(cap),
       page: "1",
     });
-    if (!Array.isArray(logs)) return [];
+    return Array.isArray(txs) ? txs : [];
+  });
+}
 
-    const MAX = BigInt(
-      "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-    );
-    return logs
-      .filter((tx: any) => {
-        try {
-          return BigInt(tx.value) >= MAX / 2n;
-        } catch {
-          return false;
-        }
-      })
-      .map((tx: any) => ({
-        tokenAddress: tx.contractAddress,
-        tokenName: tx.tokenName ?? "",
-        spender: tx.to,
-        value: tx.value,
-        txHash: tx.hash,
-      }));
-  } catch {
-    return [];
-  }
+export async function getTokenTransactions(address: string): Promise<TokenApproval[]> {
+  return cache.getOrFetch(`tokentx:${address}`, TTL.WALLET, async () => {
+    try {
+      const logs = await get<any[]>({
+        module: "account",
+        action: "tokentx",
+        address,
+        startblock: "0",
+        endblock: "latest",
+        sort: "desc",
+        offset: "200",
+        page: "1",
+      });
+      if (!Array.isArray(logs)) return [];
+
+      const MAX = BigInt(
+        "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+      );
+      return logs
+        .filter((tx: any) => {
+          try {
+            return BigInt(tx.value) >= MAX / 2n;
+          } catch {
+            return false;
+          }
+        })
+        .map((tx: any) => ({
+          tokenAddress: tx.contractAddress,
+          tokenName: tx.tokenName ?? "",
+          spender: tx.to,
+          value: tx.value,
+          txHash: tx.hash,
+        }));
+    } catch {
+      return [];
+    }
+  });
 }

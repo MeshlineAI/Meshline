@@ -36,11 +36,11 @@ export const config = {
     schemaUid: process.env.EAS_SCHEMA_UID,
     contractAddress: optional(
       "EAS_CONTRACT_ADDRESS",
-      "0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587"
+      "0x4200000000000000000000000000000000000021"
     ),
     schemaRegistryAddress: optional(
       "EAS_SCHEMA_REGISTRY_ADDRESS",
-      "0x720c2bA66D19A725143FBf5fDC5b4B4eE8490538"
+      "0x4200000000000000000000000000000000000020"
     ),
   },
 
