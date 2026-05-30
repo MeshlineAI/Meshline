@@ -4,9 +4,9 @@ import { pool } from "../db";
 
 const router = Router();
 
-router.get("/:uid", x402Gate("0.001", "Report retrieval"), async (req, res) => {
+router.get<{ uid: string }>("/:uid", x402Gate("0.001", "Report retrieval"), async (req, res) => {
   try {
-    const { uid } = req.params;
+    const uid = req.params.uid;
     if (!/^[0-9a-f-]{36}$/.test(uid)) {
       return res.status(400).json({ error: "Invalid report UID" });
     }
