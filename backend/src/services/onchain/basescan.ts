@@ -1,22 +1,55 @@
+/**
+ * Basescan API wrapper — backed by Etherscan V2 (chainid=8453).
+ *
+ * Free tier limits:
+ *   - 5 calls/second  → we cap at 4/s with a token-bucket rate limiter
+ *   - 100,000 calls/day
+ *   - 1,000 max records per request (enforced from July 2026, we stay under now)
+ */
+
 import axios from "axios";
 import { config } from "../../config";
-import type { AbiItem, BaseTx, TokenApproval } from "../../types";
+import type { BaseTx, TokenApproval } from "../../types";
 
-const BASE = config.base.basescanUrl;
-const KEY = config.base.basescanApiKey;
+// ── Rate limiter (token bucket, 4 req/s) ─────────────────────────────────────
+
+const RATE_MS = 1000 / 4; // 250ms between calls
+let lastCall = 0;
+
+async function throttle(): Promise<void> {
+  const now = Date.now();
+  const wait = RATE_MS - (now - lastCall);
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  lastCall = Date.now();
+}
+
+// ── Core request ──────────────────────────────────────────────────────────────
 
 async function get<T>(params: Record<string, string>): Promise<T> {
-  const res = await axios.get(BASE, {
-    params: { ...params, apikey: KEY },
+  await throttle();
+  const res = await axios.get(config.base.basescanUrl, {
+    params: {
+      chainid: String(config.base.chainId),
+      apikey: config.base.basescanApiKey,
+      ...params,
+    },
     timeout: 10_000,
   });
-  if (res.data.status === "0" && res.data.message !== "No transactions found") {
-    if (res.data.message !== "No records found") {
-      throw new Error(`Basescan error: ${res.data.message} — ${res.data.result}`);
-    }
+
+  const { status, message, result } = res.data;
+  if (
+    status === "0" &&
+    message !== "No transactions found" &&
+    message !== "No records found" &&
+    message !== "No data found"
+  ) {
+    throw new Error(`Basescan: ${message} — ${typeof result === "string" ? result : JSON.stringify(result)}`);
   }
-  return res.data.result as T;
+
+  return result as T;
 }
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ContractSource {
   SourceCode: string;
@@ -38,14 +71,15 @@ export interface TokenHolder {
   TokenHolderQuantity: string;
 }
 
+// ── Endpoints ─────────────────────────────────────────────────────────────────
+
 export async function getSourceCode(address: string): Promise<ContractSource | null> {
   const results = await get<ContractSource[]>({
     module: "contract",
     action: "getsourcecode",
     address,
   });
-  if (!results || results.length === 0) return null;
-  return results[0];
+  return Array.isArray(results) && results.length > 0 ? results[0] : null;
 }
 
 export async function getContractCreation(address: string): Promise<ContractCreation | null> {
@@ -54,8 +88,7 @@ export async function getContractCreation(address: string): Promise<ContractCrea
     action: "getcontractcreation",
     contractaddresses: address,
   });
-  if (!results || results.length === 0) return null;
-  return results[0];
+  return Array.isArray(results) && results.length > 0 ? results[0] : null;
 }
 
 export async function getContractsByDeployer(deployer: string): Promise<string[]> {
@@ -71,7 +104,7 @@ export async function getContractsByDeployer(deployer: string): Promise<string[]
   });
   if (!Array.isArray(txs)) return [];
   return txs
-    .filter((tx) => tx.to === null || tx.to === "")
+    .filter((tx) => !tx.to || tx.to === "")
     .map((tx) => tx.hash);
 }
 
@@ -90,6 +123,7 @@ export async function getTokenHolders(address: string): Promise<TokenHolder[]> {
 }
 
 export async function getTransactions(address: string, limit = 50): Promise<BaseTx[]> {
+  const cap = Math.min(limit, 1000);
   const txs = await get<BaseTx[]>({
     module: "account",
     action: "txlist",
@@ -97,7 +131,7 @@ export async function getTransactions(address: string, limit = 50): Promise<Base
     startblock: "0",
     endblock: "latest",
     sort: "desc",
-    offset: String(limit),
+    offset: String(cap),
     page: "1",
   });
   return Array.isArray(txs) ? txs : [];
@@ -116,8 +150,10 @@ export async function getTokenTransactions(address: string): Promise<TokenApprov
       page: "1",
     });
     if (!Array.isArray(logs)) return [];
-    // Filter for Approval events (value = max uint256 or large)
-    const MAX = BigInt("115792089237316195423570985008687907853269984665640564039457584007913129639935");
+
+    const MAX = BigInt(
+      "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+    );
     return logs
       .filter((tx: any) => {
         try {
@@ -136,13 +172,4 @@ export async function getTokenTransactions(address: string): Promise<TokenApprov
   } catch {
     return [];
   }
-}
-
-export async function getBlockTimestamp(blockNumber: number): Promise<number> {
-  const result = await get<{ timeStamp: string }>({
-    module: "block",
-    action: "getblockreward",
-    blockno: String(blockNumber),
-  });
-  return parseInt(result.timeStamp);
 }

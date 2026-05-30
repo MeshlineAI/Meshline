@@ -21,7 +21,8 @@ export const config = {
   base: {
     rpcUrl: process.env.BASE_RPC_URL!,
     basescanApiKey: process.env.BASESCAN_API_KEY!,
-    basescanUrl: "https://api.basescan.org/api",
+    // Basescan now runs on Etherscan V2 — use chainid=8453 to query Base
+    basescanUrl: "https://api.etherscan.io/v2/api",
     chainId: 8453,
   },
 
