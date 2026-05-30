@@ -36,7 +36,7 @@ jobs:
           EAS_SCHEMA_REGISTRY_ADDRESS: "0x4200000000000000000000000000000000000020"
           TREASURY_ADDRESS: ${{ secrets.TREASURY_ADDRESS }}
           X402_FACILITATOR_URL: https://x402.org/facilitate
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BASE_URL: https://meshline.io
 
   build-push:

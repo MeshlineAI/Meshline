@@ -51,6 +51,6 @@ export const config = {
   },
 
   github: {
-    token: process.env.GITHUB_TOKEN,
+    token: process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN,
   },
 } as const;
