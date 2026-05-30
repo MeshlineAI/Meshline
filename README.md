@@ -9,69 +9,79 @@
 
 **AI-powered onchain risk intelligence for Base.**
 
-Paste a contract address, wallet, or Base app URL. Get a risk report in under 30 seconds.
+Paste a contract address, wallet address, or Base app URL — get a deep risk report in under 30 seconds.
 
 ---
 
 ## What it does
 
-Meshline runs a deep analysis pipeline on any Base target and returns a **MESH Score** (0–1000), a human-readable AI-written report, an onchain EAS attestation, and a shareable trust badge — all from a single input.
+Meshline scans any Base target and returns a **MESH Score** (0–1000), an AI-written risk report, an onchain EAS attestation, and an embeddable trust badge. One input. One action.
 
-### Three scan types
+### Scan types
 
-| Scan | Input | What you get |
-|------|-------|-------------|
-| **Contract Intel** | `0x` contract address | 12-signal report: reentrancy, honeypot, proxy patterns, deployer history, exploit similarity, and more |
-| **Wallet Intel** | `0x` wallet or Basename | Drainer interactions, unlimited approval exposure, MEV activity, behavioral fingerprint |
-| **Base App Audit** | dApp URL (e.g. `app.uniswap.org`) | DNS/TLS, CSP headers, phishing pattern match, connected contract risk |
+| Scan | Input | Signals |
+|---|---|---|
+| **Contract Intel** | `0x` contract address | Source verification, proxy patterns, owner privileges, deployer history, reentrancy vectors, honeypot detection, liquidity concentration, exploit similarity, CVE exposure, GitHub disclosure, token economics, age + activity |
+| **Wallet Intel** | `0x` wallet address | Drainer interactions, unlimited approval exposure, MEV activity, transaction patterns, protocol fingerprint |
+| **Base App Audit** | dApp URL | TLS/HTTPS, security headers, API key exposure, phishing pattern match, CSP policy |
 
 ### MESH Score
 
-| Score | Tier | Label |
-|-------|------|-------|
+| Score | Tier | Meaning |
+|---|---|---|
 | 900–1000 | AAA | Verified Safe |
 | 700–899 | AA | Low Risk |
 | 500–699 | A | Caution |
 | 300–499 | BB | High Risk |
 | 0–299 | C | Danger |
 
-Every score is attested onchain via EAS on Base within 5 seconds of report generation. Any contract, wallet, or agent can read the latest MESH Score directly from the attestation registry.
+Every score is attested onchain via EAS on Base. Any contract, wallet, or agent can read the latest MESH Score directly from the attestation registry.
 
 ---
 
-## How a scan works
+## Scan pipeline
 
 ```
-input → onchain fetch (Viem) → x402 payment gate → 12 signals (parallel) → Claude report → EAS attestation → public URL + trust badge
+input → type detection → onchain fetch (Viem + Basescan)
+      → signals computed in parallel
+      → Gemini AI writes the report
+      → EAS attestation on Base
+      → public report URL + trust badge SVG
 ```
 
-Total time: ~25 seconds.
+~25 seconds end to end.
 
 ---
 
-## Agent API (x402)
+## API
 
-Meshline is natively queryable by AI agents via x402 on Base. No API key. No account. Pay per scan in USDC.
+All endpoints live at `https://meshline-backend-latest.onrender.com`.
 
-```
-GET  /v1/scan/contract/:address   0.001 USDC  →  MESH Score + top signals JSON
-GET  /v1/scan/wallet/:address     0.001 USDC  →  Wallet score + approval count
-GET  /v1/scan/app?url=...         0.005 USDC  →  App security headers + risk
-GET  /v1/report/:uid              0.001 USDC  →  Full report JSON + EAS UID
-POST /v1/batch                    0.0005/ea   →  Array of MESH Scores (bulk)
-```
+First 3 contract and wallet scans per IP per month are free. After that, pay per scan in USDC on Base via x402 — no account, no API key.
 
-Listed on [Agent.market](https://agent.market) — discoverable by any AgentKit or x402-compatible agent on Base.
+| Endpoint | Price | Returns |
+|---|---|---|
+| `GET /v1/scan/contract/:address` | Free × 3, then 0.001 USDC | MESH Score + 12 signals + AI report |
+| `GET /v1/scan/wallet/:address` | Free × 3, then 0.001 USDC | Wallet score + approval risk |
+| `GET /v1/scan/app?url=` | 0.005 USDC | App security audit |
+| `POST /v1/batch` | 0.0005 USDC/ea | Bulk MESH Scores (max 50) |
+| `GET /v1/report/:uid` | Free | Full report JSON |
+| `GET /v1/badge/:address` | Free | Live SVG trust badge |
+
+### x402 — machine-native payments
+
+AI agents using Coinbase AgentKit or any x402-compatible client call Meshline with zero setup. The agent pays 0.001 USDC per scan and gets structured JSON back. No subscription, no API key, no account.
 
 ---
 
 ## Trust badge
 
-Every scan generates an embeddable SVG badge that refreshes live from the latest EAS attestation.
+Every scan generates an embeddable SVG badge that auto-refreshes from the latest EAS attestation.
 
 ```html
-<a href="https://meshline.io/scan/YOUR_SCAN_UID">
-  <img src="https://meshline.io/badge/YOUR_ADDRESS" alt="Meshline Security Score" />
+<a href="https://meshline.io/scan/YOUR_REPORT_UID">
+  <img src="https://meshline-backend-latest.onrender.com/v1/badge/YOUR_ADDRESS"
+       alt="Meshline Security Score" />
 </a>
 ```
 
@@ -80,7 +90,7 @@ Every scan generates an embeddable SVG badge that refreshes live from the latest
 ## Pricing
 
 | Tier | Price | Scans |
-|------|-------|-------|
+|---|---|---|
 | Free | $0 | 3 contract scans/mo |
 | Pro | $49/mo | Unlimited + PDF export + alerts |
 | Enterprise | $199/mo | Private audits + bulk API + SSO + SLA |
@@ -99,20 +109,6 @@ ERC-20 on Base. Fixed supply: 50,000,000 MESH.
 
 ---
 
-## Roadmap
-
-| Phase | Weeks | Focus |
-|-------|-------|-------|
-| 1 | 1–4 | Contract Intel + Wallet Intel live on Base, EAS, x402, free tier, Agent.market listing |
-| 2 | 5–8 | Pro tier, Base App Audit, MESH token launch, badge flywheel, 1K scans/day |
-| 3 | 9–12 | Enterprise tier, MCP skill for Claude/Cursor, Morpho/Aerodrome integrations, $1M cumulative scan volume |
-
----
-
 ## Tech stack
 
-Base L2 · x402 · EAS · OnchainKit · Agentic Wallets · Coinbase CDP · Viem · Claude
-
----
-
-Built on Base. MESHLINE v0.1 — May 2026.
+Base L2 · Bun · Express · PostgreSQL · Viem · Gemini AI · EAS · x402 · Next.js · Tailwind · Foundry
