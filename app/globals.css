@@ -1,0 +1,428 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #070a0f;
+  --foreground: #e7edf4;
+  /* Brand = the logo gradient: cyan → mint → lime. */
+  --accent: #00e5ff;
+  --accent-soft: #46e0b4;
+  --accent-lime: #aef73c;
+  --brand-gradient: linear-gradient(118deg, #00e5ff 0%, #46e0b4 52%, #aef73c 100%);
+  --brand-gradient-soft: linear-gradient(118deg, rgba(0, 229, 255, 0.16), rgba(174, 247, 60, 0.14));
+  /* glass tuning — pronounced frosted glass (more frost, more depth) */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(18, 26, 34, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 26px;
+  /* solid editorial surfaces */
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-2: rgba(255, 255, 255, 0.055);
+  --hairline: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(0, 229, 255, 0.28);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #070910;
+}
+::-webkit-scrollbar-thumb {
+  background: #222838;
+  border-radius: 10px;
+  border: 2px solid #070910;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #303851;
+}
+
+@layer components {
+  .container-mesh {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  /* Editorial label — calm sans small-caps (was techy monospace). */
+  .eyebrow {
+    @apply font-sans text-[10.5px] font-medium uppercase tracking-[0.2em] text-muted;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     FROSTED GLASS — the core surface language. Pronounced frost:
+     heavy backdrop blur + saturation, a bright specular top edge,
+     a brand-tinted corner glow, and layered depth shadows so the
+     surface reads as real, thick glass floating over the page.
+     ───────────────────────────────────────────────────────── */
+  .glass {
+    position: relative;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%) brightness(1.06);
+    backdrop-filter: blur(var(--glass-blur)) saturate(185%) brightness(1.06);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--tw-shadow, 0 12px 44px -10px rgba(0, 0, 0, 0.65)),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.35);
+  }
+  /* top specular gloss + a faint cyan→lime tint bleeding from the corners */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 100% at 0% 0%, rgba(0, 229, 255, 0.12), transparent 42%),
+      radial-gradient(120% 100% at 100% 0%, rgba(174, 247, 60, 0.09), transparent 46%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 20%, transparent 56%);
+  }
+  /* darker, denser frosted glass — for modals/menus that sit over content */
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(34px) saturate(200%) brightness(1.04);
+    backdrop-filter: blur(34px) saturate(200%) brightness(1.04);
+  }
+
+  /* Moving specular sweep across a glass surface ("liquid" shine). */
+  .glass-specular {
+    overflow: hidden;
+  }
+  .glass-specular::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 35%;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.22),
+      transparent
+    );
+    animation: sheen 3.6s ease-in-out infinite;
+  }
+
+  /* Card surface — lightly frosted glass with a brand-tinted top edge light,
+     so panels read as glass too (just calmer than `.glass`). */
+  .panel {
+    position: relative;
+    border-radius: 1.25rem;
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    backdrop-filter: blur(10px) saturate(140%);
+    border: 1px solid var(--hairline);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
+      0 24px 60px -32px rgba(0, 0, 0, 0.9);
+  }
+  /* hairline brand glow along the very top edge of every panel */
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 229, 255, 0.45),
+      rgba(174, 247, 60, 0.35),
+      transparent
+    );
+    opacity: 0.5;
+  }
+  .panel-hover {
+    @apply transition-colors duration-300;
+  }
+  .panel-hover:hover {
+    background: var(--surface-2);
+    border-color: rgba(0, 229, 255, 0.22);
+  }
+
+  /* Emphasis text — the actual logo gradient, clipped to the glyphs.
+     (Class name kept as `.text-gradient` so every emphasis span lights up.) */
+  .text-gradient {
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-accent {
+    color: var(--accent);
+  }
+  /* Serif flourish (kept available for editorial display use). */
+  .font-serif-display {
+    font-family: var(--font-serif), Newsreader, ui-serif, Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.018em;
+  }
+
+  /* Primary action = the logo gradient as a fill, ink-dark text, brand glow. */
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300;
+    color: #06090e;
+    background: var(--brand-gradient);
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.35) inset,
+      0 0 0 1px rgba(0, 229, 255, 0.35),
+      0 12px 34px -12px rgba(0, 229, 255, 0.55),
+      0 8px 26px -14px rgba(174, 247, 60, 0.4);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08) saturate(1.05);
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.45) inset,
+      0 0 0 1px rgba(0, 229, 255, 0.5),
+      0 16px 44px -12px rgba(0, 229, 255, 0.7),
+      0 10px 30px -14px rgba(174, 247, 60, 0.5);
+  }
+
+  /* Ghost = hairline outline, no fill. */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition-all duration-300;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+
+  .grid-dots {
+    background-image: radial-gradient(rgba(0, 229, 255, 0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 48px -12px rgba(0, 229, 255, 0.55);
+  }
+
+  /* Gradient hairline border via a masked pseudo-frame — for brand-edged cards. */
+  .brand-ring {
+    position: relative;
+  }
+  .brand-ring::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--brand-gradient);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+
+  /* Subtle film-grain / noise so flat areas don't look "AI-clean". */
+  .noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+}
+
+/* Markdown report prose (sans body, mono code) */
+.prose-mesh {
+  color: #aebfd4;
+  font-size: 0.925rem;
+  line-height: 1.75;
+}
+.prose-mesh h1,
+.prose-mesh h2,
+.prose-mesh h3,
+.prose-mesh h4 {
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 1.8em;
+  margin-bottom: 0.6em;
+  line-height: 1.25;
+}
+.prose-mesh h1 {
+  font-size: 1.5rem;
+}
+.prose-mesh h2 {
+  font-size: 1.2rem;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.prose-mesh h3 {
+  font-size: 1.02rem;
+  color: var(--accent);
+}
+.prose-mesh p {
+  margin: 0.9em 0;
+}
+.prose-mesh strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+.prose-mesh a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-mesh ul,
+.prose-mesh ol {
+  margin: 0.9em 0;
+  padding-left: 1.3em;
+}
+.prose-mesh ul {
+  list-style: none;
+}
+.prose-mesh ul > li {
+  position: relative;
+  margin: 0.4em 0;
+  padding-left: 1.1em;
+}
+.prose-mesh ul > li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--accent-soft);
+}
+.prose-mesh ol {
+  list-style: decimal;
+}
+.prose-mesh ol > li {
+  margin: 0.4em 0;
+}
+.prose-mesh ol > li::marker {
+  color: #7c93ad;
+}
+.prose-mesh code {
+  font-family: var(--font-mono), monospace;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  font-size: 0.84em;
+  color: var(--accent-soft);
+}
+.prose-mesh pre {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 1.2em 0;
+}
+.prose-mesh pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #aebfd4;
+}
+.prose-mesh blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 1em;
+  margin: 1.2em 0;
+  color: #94a9c0;
+}
+.prose-mesh hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 2em 0;
+}
+.prose-mesh table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.85rem;
+}
+.prose-mesh th,
+.prose-mesh td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.5em 0.7em;
+  text-align: left;
+}
+.prose-mesh th {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print / PDF export for report pages */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+    color: #0a0a0a;
+  }
+  .glass,
+  .panel {
+    border-color: #ddd;
+    background: #fff;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
