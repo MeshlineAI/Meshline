@@ -24,6 +24,20 @@ jobs:
         run: bun run check
       - name: Run tests
         run: bun test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BASE_RPC_URL: https://mainnet.base.org
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
+          EAS_PRIVATE_KEY: ${{ secrets.EAS_PRIVATE_KEY }}
+          EAS_SCHEMA_UID: ${{ secrets.EAS_SCHEMA_UID }}
+          EAS_CONTRACT_ADDRESS: "0x4200000000000000000000000000000000000021"
+          EAS_SCHEMA_REGISTRY_ADDRESS: "0x4200000000000000000000000000000000000020"
+          TREASURY_ADDRESS: ${{ secrets.TREASURY_ADDRESS }}
+          X402_FACILITATOR_URL: https://x402.org/facilitate
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_URL: https://meshline.io
 
   build-push:
     name: Build & Push
