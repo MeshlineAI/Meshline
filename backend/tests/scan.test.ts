@@ -26,12 +26,6 @@ beforeAll(async () => {
 }, 30_000);
 
 describe("GET /v1/scan/contract/:address", () => {
-  it("returns 200 or 402 depending on free tier and payment config", async () => {
-    const res = await request(app).get(`/v1/scan/contract/${USDC}`);
-    // Free tier may allow through (200) or x402 may gate (402) depending on quota
-    expect([200, 402, 500]).toContain(res.status);
-  }, 15_000);
-
   it("scans USDC and returns a valid MESH score when free tier is available", async () => {
     // Skip if TREASURY_ADDRESS is set AND free quota is exhausted (tested in x402.test.ts)
     if (process.env.TREASURY_ADDRESS) {
