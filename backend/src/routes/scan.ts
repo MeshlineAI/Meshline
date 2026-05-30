@@ -87,13 +87,16 @@ async function persistAndRespond(res: any, params: {
 
 router.get(
   "/contract/:address",
+  (req, res, next) => {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(req.params.address as string)) {
+      return res.status(400).json({ error: "Invalid address" });
+    }
+    next();
+  },
   x402Gate("0.001", "Contract Intel scan"),
   async (req, res) => {
     try {
       const address = req.params.address as `0x${string}`;
-      if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
-        return res.status(400).json({ error: "Invalid address" });
-      }
       const data = await fetchContractData(address);
       const signals = await runContractSignals(data);
       await persistAndRespond(res, { target: address, scanType: "contract", signals });
@@ -108,13 +111,16 @@ router.get(
 
 router.get(
   "/wallet/:address",
+  (req, res, next) => {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(req.params.address as string)) {
+      return res.status(400).json({ error: "Invalid address" });
+    }
+    next();
+  },
   x402Gate("0.001", "Wallet Intel scan"),
   async (req, res) => {
     try {
       const address = req.params.address as `0x${string}`;
-      if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
-        return res.status(400).json({ error: "Invalid address" });
-      }
       const data = await fetchWalletData(address);
       const signals = await runWalletSignals(data);
       await persistAndRespond(res, { target: address, scanType: "wallet", signals });
@@ -129,13 +135,17 @@ router.get(
 
 router.get(
   "/app",
+  (req, res, next) => {
+    const url = req.query.url as string | undefined;
+    if (!url || !/^https?:\/\/.+/.test(url)) {
+      return res.status(400).json({ error: "Invalid or missing ?url= parameter" });
+    }
+    next();
+  },
   x402Gate("0.005", "Base App Audit"),
   async (req, res) => {
     try {
       const url = req.query.url as string;
-      if (!url || !/^https?:\/\/.+/.test(url)) {
-        return res.status(400).json({ error: "Invalid or missing ?url= parameter" });
-      }
       const data = await fetchAppData(url);
       const signals: Signal[] = [
         appSignals.tlsCheck(data),

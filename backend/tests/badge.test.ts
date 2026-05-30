@@ -29,13 +29,17 @@ describe("generateBadgeSvg", () => {
   });
 
   it("uses different colors for each tier", () => {
-    const colors = tiers.map((tier) =>
-      generateBadgeSvg({ score: 500, tier, target: "0x1234", reportUrl: "" })
-    );
-    const uniqueColorCount = new Set(
-      colors.map((svg) => svg.match(/fill="(#[0-9a-f]+)"/i)?.[1])
-    ).size;
-    expect(uniqueColorCount).toBeGreaterThan(1);
+    const TIER_COLORS: Record<string, string> = {
+      AAA: "#00e5ff",
+      AA: "#69ff47",
+      A: "#ffeb3b",
+      BB: "#ff9800",
+      C: "#ff1744",
+    };
+    for (const [tier, color] of Object.entries(TIER_COLORS)) {
+      const svg = generateBadgeSvg({ score: 500, tier: tier as any, target: "0x1234", reportUrl: "" });
+      expect(svg).toContain(color);
+    }
   });
 
   it("truncates long contract addresses", () => {

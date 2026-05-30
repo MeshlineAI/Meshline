@@ -23,7 +23,7 @@ function requireEnv(...keys: string[]) {
 beforeAll(async () => {
   requireEnv("BASE_RPC_URL", "BASESCAN_API_KEY", "GEMINI_API_KEY", "DATABASE_URL");
   await migrate();
-});
+}, 30_000);
 
 describe("GET /v1/scan/contract/:address", () => {
   it("returns 402 when no payment header (x402 gate active in production)", async () => {
@@ -57,7 +57,9 @@ describe("GET /v1/scan/contract/:address", () => {
 
   it("returns 400 for an invalid address", async () => {
     const res = await request(app).get("/v1/scan/contract/not-an-address");
+    // Validation runs before x402 gate — always 400 regardless of payment config
     expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Invalid address");
   });
 });
 
@@ -85,7 +87,9 @@ describe("GET /v1/scan/app", () => {
 
   it("returns 400 for missing url param", async () => {
     const res = await request(app).get("/v1/scan/app");
+    // Validation runs before x402 gate — always 400 regardless of payment config
     expect(res.status).toBe(400);
+    expect(res.body.error).toContain("url");
   });
 });
 
@@ -101,7 +105,9 @@ describe("GET /v1/badge/:address", () => {
     const res = await request(app).get(`/v1/badge/${USDC}`);
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("svg");
-    expect(res.text).toContain("<svg");
-    expect(res.text).toContain("MESHLINE");
+    // supertest may return SVG as Buffer (image/svg+xml) — handle both
+    const body = Buffer.isBuffer(res.body) ? res.body.toString() : (res.text ?? "");
+    expect(body).toContain("<svg");
+    expect(body).toContain("MESHLINE");
   });
 });
