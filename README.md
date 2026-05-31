@@ -79,7 +79,7 @@ AI agents using Coinbase AgentKit or any x402-compatible client call Meshline wi
 Every scan generates an embeddable SVG badge that auto-refreshes from the latest EAS attestation.
 
 ```html
-<a href="https://meshline.io/scan/YOUR_REPORT_UID">
+<a href="https://meshline.tech/scan/YOUR_REPORT_UID">
   <img src="https://meshline-backend-latest.onrender.com/v1/badge/YOUR_ADDRESS"
        alt="Meshline Security Score" />
 </a>

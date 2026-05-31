@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { NextFunction } from "express";
 import { x402Gate } from "../middleware/x402";
 import { freeTierGate } from "../middleware/freeTier";
 import { fetchContractData, fetchWalletData, fetchAppData } from "../services/onchain/fetch";
@@ -54,6 +55,28 @@ async function runWalletSignals(data: Awaited<ReturnType<typeof fetchWalletData>
   );
 }
 
+/**
+ * Attests the scan onchain and backfills eas_uid. Runs in the background after
+ * the response is sent — a chain confirmation must never block the request.
+ */
+function attestInBackground(params: {
+  id: string;
+  target: string;
+  scanType: ScanType;
+  score: number;
+  tier: ReturnType<typeof calculateScore>["tier"];
+  top: Signal[];
+  report: string;
+  reportUrl: string;
+}): void {
+  const { id, target, scanType, score, tier, top, report, reportUrl } = params;
+  attest({ target, scanType, meshScore: score, tier, topSignals: top, reportMarkdown: report, reportUrl })
+    .then((easUid) =>
+      pool.query(`UPDATE scans SET eas_uid = $1 WHERE id = $2`, [easUid, id])
+    )
+    .catch((err) => console.warn(`[eas] attestation failed for ${id}:`, err?.message));
+}
+
 async function persistAndRespond(res: any, params: {
   target: string;
   scanType: ScanType;
@@ -63,25 +86,23 @@ async function persistAndRespond(res: any, params: {
   const { score, tier } = calculateScore(signals);
   const top = topSignals(signals);
   const id = randomUUID();
-  const reportUrl = `${process.env.BASE_URL ?? "https://meshline.io"}/scan/${id}`;
+  const scannedAt = Math.floor(Date.now() / 1000);
+  const reportUrl = `${process.env.BASE_URL ?? "https://meshline.tech"}/scan/${id}`;
 
   const report = await generateReport({ target, scanType, meshScore: score, tier, signals });
   const reportHash = hashReport(report);
 
-  let easUid: string | undefined;
-  try {
-    easUid = await attest({ target, scanType, meshScore: score, tier, topSignals: top, reportMarkdown: report, reportUrl });
-  } catch (err: any) {
-    console.warn("[eas] attestation skipped:", err.message);
-  }
-
+  // Persist immediately with eas_uid = null; attestation backfills it async
   await pool.query(
     `INSERT INTO scans (id, target, scan_type, mesh_score, tier, report_json, report_markdown, report_hash, eas_uid, report_url)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-    [id, target, scanType, score, tier, JSON.stringify({ signals }), report, reportHash, easUid ?? null, reportUrl]
+    [id, target, scanType, score, tier, JSON.stringify({ signals }), report, reportHash, null, reportUrl]
   );
 
-  res.json({ id, target, scanType, meshScore: score, tier, signals, reportMarkdown: report, reportHash, easUid, reportUrl, scannedAt: Math.floor(Date.now() / 1000) });
+  res.json({ id, target, scanType, meshScore: score, tier, signals, reportMarkdown: report, reportHash, easUid: null, reportUrl, scannedAt });
+
+  // Fire-and-forget: attest onchain and backfill, after the response is sent
+  attestInBackground({ id, target, scanType, score, tier, top, report, reportUrl });
 }
 
 // ── GET /v1/scan/contract/:address ────────────────────────────────────────────
@@ -95,15 +116,14 @@ router.get(
     next();
   },
   freeTierGate("contract", x402Gate("0.001", "Contract Intel scan")),
-  async (req, res) => {
+  async (req, res, next: NextFunction) => {
     try {
       const address = req.params.address as `0x${string}`;
       const data = await fetchContractData(address);
       const signals = await runContractSignals(data);
       await persistAndRespond(res, { target: address, scanType: "contract", signals });
-    } catch (err: any) {
-      console.error("[scan/contract]", err);
-      res.status(500).json({ error: err.message });
+    } catch (err) {
+      next(err);
     }
   }
 );
@@ -119,15 +139,14 @@ router.get(
     next();
   },
   freeTierGate("wallet", x402Gate("0.001", "Wallet Intel scan")),
-  async (req, res) => {
+  async (req, res, next: NextFunction) => {
     try {
       const address = req.params.address as `0x${string}`;
       const data = await fetchWalletData(address);
       const signals = await runWalletSignals(data);
       await persistAndRespond(res, { target: address, scanType: "wallet", signals });
-    } catch (err: any) {
-      console.error("[scan/wallet]", err);
-      res.status(500).json({ error: err.message });
+    } catch (err) {
+      next(err);
     }
   }
 );
@@ -144,7 +163,7 @@ router.get(
     next();
   },
   x402Gate("0.005", "Base App Audit"),
-  async (req, res) => {
+  async (req, res, next: NextFunction) => {
     try {
       const url = req.query.url as string;
       const data = await fetchAppData(url);
@@ -156,9 +175,8 @@ router.get(
         appSignals.cspPolicy(data),
       ];
       await persistAndRespond(res, { target: url, scanType: "app", signals });
-    } catch (err: any) {
-      console.error("[scan/app]", err);
-      res.status(500).json({ error: err.message });
+    } catch (err) {
+      next(err);
     }
   }
 );
@@ -168,7 +186,7 @@ router.get(
 router.post(
   "/batch",
   x402Gate("0.0005", "Batch scan"),
-  async (req, res) => {
+  async (req, res, next: NextFunction) => {
     try {
       const { addresses } = req.body as { addresses?: string[] };
       if (!Array.isArray(addresses) || addresses.length === 0) {
@@ -192,11 +210,11 @@ router.post(
         results: results.map((r, i) =>
           r.status === "fulfilled"
             ? r.value
-            : { address: addresses[i], error: (r as any).reason?.message ?? "failed" }
+            : { address: addresses[i], error: "scan failed" }
         ),
       });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    } catch (err) {
+      next(err);
     }
   }
 );

@@ -1,10 +1,11 @@
 import { Router } from "express";
+import type { NextFunction } from "express";
 import { pool } from "../db";
 
 const router = Router();
 
 // Public — no x402. Reports are permanently shareable, no login required.
-router.get<{ uid: string }>("/:uid", async (req, res) => {
+router.get<{ uid: string }>("/:uid", async (req, res, next: NextFunction) => {
   try {
     const uid = req.params.uid;
     if (!/^[0-9a-f-]{36}$/.test(uid)) {
@@ -35,10 +36,10 @@ router.get<{ uid: string }>("/:uid", async (req, res) => {
       easUid: row.eas_uid,
       reportUrl: row.report_url,
       createdAt: row.created_at,
+      scannedAt: Math.floor(new Date(row.created_at).getTime() / 1000),
     });
-  } catch (err: any) {
-    console.error("[report]", err);
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

@@ -1,5 +1,6 @@
 import { publicClient } from "./client";
 import * as basescan from "./basescan";
+import { assertSafeUrl } from "./ssrfGuard";
 import type { ContractData, WalletData, AppData } from "../../types";
 import axios from "axios";
 
@@ -84,12 +85,30 @@ export async function fetchWalletData(address: `0x${string}`): Promise<WalletDat
 }
 
 export async function fetchAppData(url: string): Promise<AppData> {
-  const res = await axios.get(url, {
-    timeout: 15_000,
-    maxRedirects: 5,
-    validateStatus: () => true,
-    headers: { "User-Agent": "Meshline-Security-Scanner/1.0" },
-  });
+  // SSRF guard: validate the initial URL, then follow redirects manually,
+  // re-validating each hop so a redirect can't point at a private address.
+  let currentUrl = url;
+  let res;
+
+  for (let hop = 0; hop <= 5; hop++) {
+    await assertSafeUrl(currentUrl);
+
+    res = await axios.get(currentUrl, {
+      timeout: 15_000,
+      maxRedirects: 0, // we follow manually to validate each hop
+      validateStatus: () => true,
+      headers: { "User-Agent": "Meshline-Security-Scanner/1.0" },
+    });
+
+    // 3xx with a Location → validate and follow
+    if (res.status >= 300 && res.status < 400 && res.headers.location) {
+      currentUrl = new URL(res.headers.location, currentUrl).toString();
+      continue;
+    }
+    break;
+  }
+
+  if (!res) throw Object.assign(new Error("No response from target"), { status: 502 });
 
   const headers: Record<string, string> = {};
   for (const [key, val] of Object.entries(res.headers)) {
@@ -98,7 +117,7 @@ export async function fetchAppData(url: string): Promise<AppData> {
 
   return {
     url,
-    finalUrl: res.request?.res?.responseUrl ?? url,
+    finalUrl: currentUrl,
     statusCode: res.status,
     headers,
     bodyHtml: typeof res.data === "string" ? res.data.slice(0, 100_000) : "",

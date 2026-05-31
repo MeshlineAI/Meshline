@@ -50,6 +50,13 @@ export const config = {
     usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`,
   },
 
+  cors: {
+    origins: optional("ALLOWED_ORIGINS", "https://meshline.tech,http://localhost:3000")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  },
+
   github: {
     token: process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN,
   },

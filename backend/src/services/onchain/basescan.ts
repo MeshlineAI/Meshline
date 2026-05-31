@@ -113,18 +113,24 @@ export async function getContractsByDeployer(deployer: string): Promise<string[]
   });
 }
 
-export async function getTokenHolders(address: string): Promise<TokenHolder[]> {
+/**
+ * Returns holder list, or `null` if the data is unavailable (e.g. the
+ * `tokenholderlist` endpoint requires a paid Etherscan plan and the request
+ * failed). Callers must treat `null` as "unknown", NOT as "no risk".
+ */
+export async function getTokenHolders(address: string): Promise<TokenHolder[] | null> {
   return cache.getOrFetch(`holders:${address}`, TTL.TOKEN_HOLDERS, async () => {
     try {
-      return await get<TokenHolder[]>({
+      const result = await get<TokenHolder[]>({
         module: "token",
         action: "tokenholderlist",
         contractaddress: address,
         page: "1",
         offset: "50",
       });
+      return Array.isArray(result) ? result : null;
     } catch {
-      return [];
+      return null;
     }
   });
 }

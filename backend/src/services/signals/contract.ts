@@ -15,30 +15,42 @@ function abiNames(abi: ContractData["abi"]): Set<string> {
   );
 }
 
-function bytecodeIncludes(bytecode: `0x${string}` | null, hex: string): boolean {
-  if (!bytecode) return false;
-  return bytecode.toLowerCase().includes(hex.toLowerCase());
+/**
+ * Disassembles bytecode into an ordered list of opcodes, correctly skipping
+ * the immediate operand bytes of PUSH1–PUSH32 (0x60–0x7f). Without this, the
+ * data bytes inside a PUSH would be misread as instructions.
+ */
+function disassemble(bytecode: `0x${string}` | null): number[] {
+  if (!bytecode || bytecode.length < 4) return [];
+  const hex = bytecode.slice(2);
+  const ops: number[] = [];
+  for (let i = 0; i + 2 <= hex.length; ) {
+    const op = parseInt(hex.slice(i, i + 2), 16);
+    if (Number.isNaN(op)) break;
+    ops.push(op);
+    i += 2;
+    // PUSH1 (0x60) .. PUSH32 (0x7f) carry 1..32 immediate bytes
+    if (op >= 0x60 && op <= 0x7f) {
+      const n = op - 0x60 + 1;
+      i += n * 2;
+    }
+  }
+  return ops;
 }
 
-// Opcode search: returns true if bytecode contains opcode A within `window`
-// opcodes of opcode B
-function opcodeProximity(
-  bytecode: `0x${string}` | null,
-  opcodeA: string,
-  opcodeB: string,
-  window = 20
-): boolean {
-  if (!bytecode) return false;
-  const hex = bytecode.slice(2).toLowerCase();
-  const a = opcodeA.toLowerCase();
-  const b = opcodeB.toLowerCase();
-  let pos = 0;
-  while (pos < hex.length - 2) {
-    if (hex.slice(pos, pos + 2) === a) {
-      const region = hex.slice(pos + 2, pos + 2 + window * 2);
-      if (region.includes(b)) return true;
+/** True if the contract's real instruction stream contains the given opcode. */
+function hasOpcode(ops: number[], opcode: number): boolean {
+  return ops.includes(opcode);
+}
+
+/** True if opcode A appears within `window` instructions before opcode B. */
+function opcodeProximityOps(ops: number[], a: number, b: number, window = 20): boolean {
+  for (let i = 0; i < ops.length; i++) {
+    if (ops[i] === a) {
+      for (let j = i + 1; j <= i + window && j < ops.length; j++) {
+        if (ops[j] === b) return true;
+      }
     }
-    pos += 2;
   }
   return false;
 }
@@ -79,7 +91,7 @@ export async function proxyPattern(c: ContractData): Promise<Signal> {
     names.has("upgradetoandcall") ||
     names.has("_upgradeto");
 
-  const hasDelegatecall = bytecodeIncludes(c.bytecode, "f4");
+  const hasDelegatecall = hasOpcode(disassemble(c.bytecode), 0xf4); // DELEGATECALL
   const isProxy = c.isProxy || hasEip1967 || (hasDelegatecall && hasUpgradeFns);
 
   const severity: Severity = isProxy && hasUpgradeFns ? "medium" : isProxy ? "low" : "none";
@@ -172,27 +184,31 @@ export async function deployerHistory(c: ContractData): Promise<Signal> {
 // ── 5. Reentrancy Vectors ─────────────────────────────────────────────────────
 
 export async function reentrancyVectors(c: ContractData): Promise<Signal> {
-  // CALL (f1) within 20 opcodes of SSTORE (55) — classic reentrancy pattern
-  const hasSuspiciousPattern = opcodeProximity(c.bytecode, "f1", "55", 20);
+  // Heuristic: CALL (0xf1) within 20 instructions of SSTORE (0x55) — the
+  // classic "external call before state write" shape. Disassembled so PUSH
+  // immediates aren't misread as opcodes.
+  const ops = disassemble(c.bytecode);
+  const hasSuspiciousPattern = opcodeProximityOps(ops, 0xf1, 0x55, 20);
   const names = abiNames(c.abi);
   const hasReentrancyGuard =
     names.has("_reentrancyguard_entered") ||
     names.has("_status") ||
-    bytecodeIncludes(c.bytecode, "5c"); // TLOAD — transient storage guard
+    hasOpcode(ops, 0x5c); // TLOAD — transient-storage guard (EIP-1153)
 
+  // Heuristic signal — capped at medium so a false positive can't tank a score
   const severity: Severity =
-    hasSuspiciousPattern && !hasReentrancyGuard ? "high" :
+    hasSuspiciousPattern && !hasReentrancyGuard ? "medium" :
     hasSuspiciousPattern ? "low" : "none";
 
   return {
     name: "Reentrancy Vectors",
     severity,
-    value: { hasSuspiciousPattern, hasReentrancyGuard },
+    value: { hasSuspiciousPattern, hasReentrancyGuard, heuristic: true },
     description:
       hasSuspiciousPattern && !hasReentrancyGuard
-        ? "Bytecode contains external call followed by state write with no reentrancy guard detected."
+        ? "Heuristic: external call appears before a state write with no reentrancy guard detected. Manual review advised."
         : hasSuspiciousPattern
-        ? "Potential reentrancy pattern found, but reentrancy guard appears to be in place."
+        ? "Potential reentrancy pattern found, but a reentrancy guard appears to be in place."
         : "No reentrancy indicators found.",
   };
 }
@@ -216,19 +232,13 @@ export async function honeypotDetection(c: ContractData): Promise<Signal> {
   const hasTaxFns =
     names.has("setselltax") || names.has("setbuytax") || names.has("settaxfee");
 
-  // Simulate buy+sell via Basescan: check if token has recent sell txs
-  // If no sell transactions despite having buy transactions, it's suspicious
+  // Concentrated-holder heuristic — only when holder data is actually available
   let noSellActivity = false;
-  if (c.address) {
-    try {
-      const holders = await basescan.getTokenHolders(c.address);
-      // If a token has >100 holders but all LP is held by top 1-2, likely honey
-      noSellActivity = holders.length > 100 && holders.slice(0, 2).reduce(
-        (sum, h) => sum + parseFloat(h.TokenHolderQuantity), 0
-      ) / holders.reduce((sum, h) => sum + parseFloat(h.TokenHolderQuantity), 0) > 0.95;
-    } catch {
-      noSellActivity = false;
-    }
+  const holders = await basescan.getTokenHolders(c.address);
+  if (holders && holders.length > 100) {
+    const total = holders.reduce((sum, h) => sum + parseFloat(h.TokenHolderQuantity), 0);
+    const top2 = holders.slice(0, 2).reduce((sum, h) => sum + parseFloat(h.TokenHolderQuantity), 0);
+    noSellActivity = total > 0 && top2 / total > 0.95;
   }
 
   const flagCount = [hasBlacklist, hasMaxTx, hasTaxFns, noSellActivity].filter(Boolean).length;
@@ -258,14 +268,23 @@ export async function honeypotDetection(c: ContractData): Promise<Signal> {
 // ── 7. Liquidity Concentration ────────────────────────────────────────────────
 
 export async function liquidityConcentration(c: ContractData): Promise<Signal> {
-  const holders = await basescan.getTokenHolders(c.address).catch(() => []);
+  const holders = await basescan.getTokenHolders(c.address);
+
+  if (holders === null) {
+    return {
+      name: "Liquidity Concentration",
+      severity: "none",
+      value: { dataAvailable: false },
+      description: "Holder data unavailable (requires a paid Basescan plan) — concentration could NOT be assessed.",
+    };
+  }
 
   if (holders.length === 0) {
     return {
       name: "Liquidity Concentration",
       severity: "none",
-      value: null,
-      description: "No token holder data available (non-ERC-20 or not indexed).",
+      value: { dataAvailable: true, totalHolders: 0 },
+      description: "No token holder data (non-ERC-20 or not indexed).",
     };
   }
 
@@ -298,52 +317,40 @@ export async function liquidityConcentration(c: ContractData): Promise<Signal> {
 
 // ── 8. Exploit Similarity ─────────────────────────────────────────────────────
 
-// Function selectors from known exploit patterns
-const KNOWN_EXPLOIT_SELECTORS = new Set([
-  "0x7ff36ab5", // Uniswap swapExactETHForTokens abuse pattern
-  "0x18cbafe5", // swapExactTokensForETH abuse
-  "0x38ed1739", // swapExactTokensForTokens
-  "0xf305d719", // addLiquidityETH with drain
-  "0x70a08231", // balanceOf (common in honeypots)
-  "0xa9059cbb", // transfer with hidden modifier
-  "0x23b872dd", // transferFrom with blacklist
-]);
+// NOTE: the previous version matched ubiquitous ERC-20 selectors (transfer,
+// balanceOf, transferFrom), which are present in every token — so it flagged
+// almost everything. We now match on genuinely dangerous low-level opcodes
+// instead. A full exploit-bytecode similarity DB is a planned later update.
 
 export async function exploitSimilarity(c: ContractData): Promise<Signal> {
   if (!c.bytecode || c.bytecode.length < 10) {
     return {
       name: "Exploit Similarity",
       severity: "none",
-      value: [],
+      value: { findings: [] },
       description: "No bytecode to analyze.",
     };
   }
 
-  const bytecodeHex = c.bytecode.slice(2).toLowerCase();
-  const selectors: string[] = [];
+  const ops = disassemble(c.bytecode);
+  const findings: string[] = [];
 
-  // Extract 4-byte function selectors from bytecode PUSH4 instructions (63 = PUSH4)
-  let pos = 0;
-  while (pos < bytecodeHex.length - 10) {
-    if (bytecodeHex.slice(pos, pos + 2) === "63") {
-      const selector = "0x" + bytecodeHex.slice(pos + 2, pos + 10);
-      if (KNOWN_EXPLOIT_SELECTORS.has(selector)) selectors.push(selector);
-    }
-    pos += 2;
-  }
+  // SELFDESTRUCT (0xff) — contract can be destroyed, funds/logic wiped
+  if (hasOpcode(ops, 0xff)) findings.push("SELFDESTRUCT opcode present");
+  // CALLCODE (0xf2) — deprecated, dangerous delegate-style call
+  if (hasOpcode(ops, 0xf2)) findings.push("CALLCODE opcode present (deprecated/unsafe)");
 
-  const severity: Severity =
-    selectors.length >= 3 ? "high" :
-    selectors.length >= 1 ? "medium" : "none";
+  // Heuristic signal — capped at medium so it cannot alone drive a DANGER tier
+  const severity: Severity = findings.length >= 1 ? "medium" : "none";
 
   return {
     name: "Exploit Similarity",
     severity,
-    value: selectors,
+    value: { findings, heuristic: true },
     description:
-      selectors.length > 0
-        ? `${selectors.length} function selector(s) match known exploit patterns.`
-        : "No known exploit selector patterns detected.",
+      findings.length > 0
+        ? `Heuristic: ${findings.join("; ")}. Manual review advised.`
+        : "No dangerous low-level opcode patterns detected.",
   };
 }
 

@@ -56,27 +56,91 @@ function buildRequirements(
   };
 }
 
-async function verifyWithFacilitator(
+const X402_VERSION = 1;
+
+/**
+ * Validates that the client's signed authorization actually matches what we
+ * asked for. Without this, a client could underpay, pay a different address,
+ * or pay on the wrong network and still pass.
+ */
+function validatePaymentMatchesRequirements(
   payment: PaymentPayload,
   requirements: PaymentRequirements
-): Promise<{ success: boolean; error?: string }> {
+): string | null {
+  const auth = payment?.payload?.authorization;
+  if (!auth) return "Missing authorization in payment payload";
+
+  if ((payment.network ?? "").toLowerCase() !== requirements.network.toLowerCase()) {
+    return `Network mismatch: expected ${requirements.network}, got ${payment.network}`;
+  }
+  if ((payment.scheme ?? "").toLowerCase() !== requirements.scheme.toLowerCase()) {
+    return `Scheme mismatch: expected ${requirements.scheme}, got ${payment.scheme}`;
+  }
+  if ((auth.to ?? "").toLowerCase() !== requirements.payTo.toLowerCase()) {
+    return "Payment recipient does not match treasury address";
+  }
+  // Client must authorize at least the required amount
+  let authorized: bigint;
+  let required: bigint;
   try {
-    const res = await fetch(`${config.payment.facilitatorUrl}/settle`, {
+    authorized = BigInt(auth.value);
+    required = BigInt(requirements.maxAmountRequired);
+  } catch {
+    return "Invalid payment value";
+  }
+  if (authorized < required) {
+    return `Underpayment: authorized ${authorized}, required ${required}`;
+  }
+  return null;
+}
+
+async function callFacilitator(
+  path: "verify" | "settle",
+  payment: PaymentPayload,
+  requirements: PaymentRequirements
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${config.payment.facilitatorUrl}/${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ payment, requirements }),
+      body: JSON.stringify({
+        x402Version: X402_VERSION,
+        paymentPayload: payment,
+        paymentRequirements: requirements,
+      }),
       signal: AbortSignal.timeout(10_000),
     });
 
+    const body: any = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const text = await res.text().catch(() => "unknown error");
-      return { success: false, error: text };
+      return { ok: false, error: body?.error ?? body?.invalidReason ?? body?.errorReason ?? `facilitator ${path} HTTP ${res.status}` };
     }
 
-    return { success: true };
+    // Gate on the JSON success/validity field, NOT on res.ok
+    const success = path === "verify" ? (body.isValid ?? body.valid) : body.success;
+    if (!success) {
+      return { ok: false, error: body?.invalidReason ?? body?.errorReason ?? `facilitator ${path} returned failure` };
+    }
+
+    return { ok: true };
   } catch (err: any) {
-    return { success: false, error: err.message ?? "facilitator unreachable" };
+    return { ok: false, error: err?.message ?? `facilitator ${path} unreachable` };
   }
+}
+
+async function verifyAndSettle(
+  payment: PaymentPayload,
+  requirements: PaymentRequirements
+): Promise<{ success: boolean; error?: string }> {
+  // Verify the signature/authorization is valid before settling on-chain
+  const verify = await callFacilitator("verify", payment, requirements);
+  if (!verify.ok) return { success: false, error: verify.error };
+
+  const settle = await callFacilitator("settle", payment, requirements);
+  if (!settle.ok) return { success: false, error: settle.error };
+
+  return { success: true };
 }
 
 export function x402Gate(amountUsdc: string, description: string) {
@@ -113,7 +177,14 @@ export function x402Gate(amountUsdc: string, description: string) {
       return;
     }
 
-    const { success, error } = await verifyWithFacilitator(payment, requirements);
+    // Reject mismatched/underpaid authorizations before touching the facilitator
+    const mismatch = validatePaymentMatchesRequirements(payment, requirements);
+    if (mismatch) {
+      res.status(402).json({ error: "Payment does not match requirements", detail: mismatch });
+      return;
+    }
+
+    const { success, error } = await verifyAndSettle(payment, requirements);
     if (!success) {
       res.status(402).json({ error: "Payment verification failed", detail: error });
       return;

@@ -1,11 +1,12 @@
 import { Router } from "express";
+import type { NextFunction } from "express";
 import { generateBadgeSvg } from "../services/badge";
 import { pool } from "../db";
 import type { RiskTier } from "../types";
 
 const router = Router();
 
-router.get("/:address", async (req, res) => {
+router.get("/:address", async (req, res, next: NextFunction) => {
   try {
     const { address } = req.params;
 
@@ -23,7 +24,7 @@ router.get("/:address", async (req, res) => {
         score: 0,
         tier: "C",
         target: address,
-        reportUrl: `https://meshline.io/scan/new?target=${address}`,
+        reportUrl: `https://meshline.tech/scan/new?target=${address}`,
       });
       return res
         .set("Content-Type", "image/svg+xml")
@@ -43,8 +44,8 @@ router.get("/:address", async (req, res) => {
       .set("Content-Type", "image/svg+xml")
       .set("Cache-Control", "public, max-age=300")
       .send(svg);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

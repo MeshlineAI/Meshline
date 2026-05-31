@@ -2,10 +2,15 @@ import type { WalletData, Signal, Severity } from "../../types";
 import { publicClient } from "../onchain/client";
 import { formatEther } from "viem";
 
-// Known drainer contract addresses on Base (community-curated list)
-const KNOWN_DRAINERS = new Set([
-  "0x0000000000000000000000000000000000000000", // placeholder — extend with real addresses
-]);
+// Known drainer addresses on Base. Loaded from the DRAINER_ADDRESSES env var
+// (comma-separated, lowercase) so the list can be maintained/updated without a
+// code change. Empty by default — see description handling below.
+const KNOWN_DRAINERS = new Set(
+  (process.env.DRAINER_ADDRESSES ?? "")
+    .split(",")
+    .map((a) => a.trim().toLowerCase())
+    .filter((a) => /^0x[0-9a-f]{40}$/.test(a))
+);
 
 export async function approvalExposure(w: WalletData): Promise<Signal> {
   const unlimited = w.tokenApprovals.filter((a) => {
@@ -41,6 +46,17 @@ export async function approvalExposure(w: WalletData): Promise<Signal> {
 }
 
 export async function drainerInteractions(w: WalletData): Promise<Signal> {
+  // If no drainer list is configured, be honest that screening didn't run
+  // rather than reporting a falsely-clean "none".
+  if (KNOWN_DRAINERS.size === 0) {
+    return {
+      name: "Drainer Interactions",
+      severity: "none",
+      value: { listConfigured: false },
+      description: "Drainer screening unavailable — no drainer address list configured.",
+    };
+  }
+
   const drainerTxs = w.recentTxs.filter(
     (tx) => tx.to && KNOWN_DRAINERS.has(tx.to.toLowerCase())
   );
@@ -50,11 +66,11 @@ export async function drainerInteractions(w: WalletData): Promise<Signal> {
   return {
     name: "Drainer Interactions",
     severity,
-    value: drainerTxs.map((t) => t.hash),
+    value: { listConfigured: true, matches: drainerTxs.map((t) => t.hash) },
     description:
       drainerTxs.length > 0
         ? `Wallet has interacted with ${drainerTxs.length} known drainer address(es).`
-        : "No interactions with known drainer contracts.",
+        : "No interactions with known drainer addresses.",
   };
 }
 

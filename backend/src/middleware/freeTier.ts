@@ -4,12 +4,9 @@ import { pool } from "../db";
 const FREE_LIMIT = 3;
 
 function clientIdentifier(req: Request): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  const ip =
-    (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]) ??
-    req.ip ??
-    "unknown";
-  return ip.trim();
+  // req.ip is derived from the trusted proxy chain ("trust proxy" is set in
+  // app.ts), so it can't be spoofed via a raw X-Forwarded-For header.
+  return (req.ip ?? "unknown").trim();
 }
 
 async function usedThisMonth(identifier: string, scanType: string): Promise<number> {

@@ -130,10 +130,17 @@ describe("liquidityConcentration signal", () => {
 });
 
 describe("exploitSimilarity signal", () => {
-  it("returns a valid signal", async () => {
+  it("returns a valid signal with findings array", async () => {
     const s = await signals.exploitSimilarity(usdcData);
     expect(["none", "low", "medium", "high", "critical"]).toContain(s.severity);
-    expect(Array.isArray(s.value)).toBe(true);
+    const val = s.value as { findings: string[] };
+    expect(Array.isArray(val.findings)).toBe(true);
+  });
+
+  it("does not flag a standard ERC-20 as exploit-similar", async () => {
+    // USDC must NOT trip the signal just for having transfer/balanceOf
+    const s = await signals.exploitSimilarity(usdcData);
+    expect(s.severity).toBe("none");
   });
 });
 

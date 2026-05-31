@@ -44,6 +44,34 @@ Write a security report with these sections:
 
 Keep the report under 500 words. Be precise. No boilerplate.`;
 
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  return withRetry(() => generateWithTimeout(model, prompt, 20_000), 2);
+}
+
+async function generateWithTimeout(
+  model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
+  prompt: string,
+  timeoutMs: number
+): Promise<string> {
+  const result = await Promise.race([
+    model.generateContent(prompt),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Gemini request timed out")), timeoutMs)
+    ),
+  ]);
+  return (result as Awaited<ReturnType<typeof model.generateContent>>).response.text();
+}
+
+async function withRetry<T>(fn: () => Promise<T>, retries: number): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastErr;
 }
