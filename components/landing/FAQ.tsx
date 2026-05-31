@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: "Is the report shareable?",
-    a: "Yes. Every scan generates a permanent public page at meshline.io/scan/{uid} plus an embeddable trust badge that auto-updates from the latest EAS attestation.",
+    a: "Yes. Every scan generates a permanent public page at meshline.tech/scan/{uid} plus an embeddable trust badge that auto-updates from the latest EAS attestation.",
   },
   {
     q: "What can I scan?",

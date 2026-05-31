@@ -60,7 +60,7 @@ export function AgentSection() {
                   {"  "}<span className="text-cyan-brand">&quot;easUid&quot;</span>:{" "}
                   <span className="text-white">&quot;0xdef4…&quot;</span>,{"\n"}
                   {"  "}<span className="text-cyan-brand">&quot;reportUrl&quot;</span>:{" "}
-                  <span className="text-white">&quot;meshline.io/scan/…&quot;</span>
+                  <span className="text-white">&quot;meshline.tech/scan/…&quot;</span>
                   {"\n"}
                   <span className="text-[#b9cbe0]">{"}"}</span>
                 </code>

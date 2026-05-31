@@ -93,18 +93,18 @@ export default async function ScanReportPage({ params }: { params: { uid: string
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
               <span>Scanned {formatRelative(report.scannedAt)}</span>
-              {report.easUid && (
-                <>
-                  <span className="text-muted-faint">·</span>
-                  <a
-                    href={easAttestationUrl(report.easUid)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-cyan-brand hover:underline"
-                  >
-                    EAS attestation <ExternalLink size={12} />
-                  </a>
-                </>
+              <span className="text-muted-faint">·</span>
+              {report.easUid ? (
+                <a
+                  href={easAttestationUrl(report.easUid)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-cyan-brand hover:underline"
+                >
+                  EAS attestation <ExternalLink size={12} />
+                </a>
+              ) : (
+                <span className="text-muted-faint">attestation pending</span>
               )}
             </div>
           </div>
@@ -166,6 +166,7 @@ export default async function ScanReportPage({ params }: { params: { uid: string
           {/* attestation + badge */}
           <div className="mt-10 grid gap-5 lg:grid-cols-2">
             <EASAttestationCard
+              uid={report.id}
               easUid={report.easUid}
               reportHash={report.reportHash}
               scannedAt={report.scannedAt}

@@ -80,6 +80,9 @@ async function parseError(res: Response): Promise<MeshApiError> {
       (requirements
         ? "Free scans used. Pay with USDC on Base to continue."
         : "Free scan quota reached for this month.");
+  } else if (res.status === 429) {
+    message = "Too many requests";
+    detail = detail ?? "You're scanning too fast. Wait a minute and try again.";
   }
   return new MeshApiError(res.status, message, detail, requirements);
 }
@@ -196,6 +199,6 @@ export function easAttestationUrl(easUid: string): string {
 }
 
 export function reportShareUrl(uid: string): string {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://meshline.io";
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://meshline.tech";
   return `${site}/scan/${uid}`;
 }

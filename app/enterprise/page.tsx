@@ -48,10 +48,10 @@ export default function EnterprisePage() {
         />
 
         <div className="container-mesh mt-8 flex flex-wrap gap-3">
-          <a href="mailto:sales@meshline.io?subject=Meshline%20Enterprise" className="btn-primary">
+          <a href="mailto:sales@meshline.tech?subject=Meshline%20Enterprise" className="btn-primary">
             Talk to sales <ArrowRight size={15} />
           </a>
-          <a href="mailto:sales@meshline.io?subject=Meshline%20Enterprise%20Demo" className="btn-ghost">
+          <a href="mailto:sales@meshline.tech?subject=Meshline%20Enterprise%20Demo" className="btn-ghost">
             Book a demo
           </a>
         </div>
@@ -98,7 +98,7 @@ export default function EnterprisePage() {
                 bulk monitoring, and compliance exports for your whole organization.
               </p>
               <a
-                href="mailto:sales@meshline.io?subject=Meshline%20Enterprise"
+                href="mailto:sales@meshline.tech?subject=Meshline%20Enterprise"
                 className="btn-primary mt-7"
               >
                 Contact sales <ArrowRight size={15} />

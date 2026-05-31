@@ -30,7 +30,7 @@ const TIERS = [
     cadence: "/mo",
     scans: "Unlimited + bulk API",
     cta: "Contact sales",
-    href: "mailto:hello@meshline.io",
+    href: "mailto:hello@meshline.tech",
     features: ["Private Base app audits", "Bulk batch API + SSO", "SOC2 export + SLA", "Dedicated Slack"],
     highlight: false,
   },

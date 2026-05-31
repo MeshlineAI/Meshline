@@ -8,7 +8,7 @@ const STAGES = [
   "Reading onchain data · Viem",
   "Computing risk signals",
   "Generating AI report · Gemini",
-  "Attesting onchain · EAS on Base",
+  "Finalizing report · EAS attestation queued",
 ];
 
 /** Faux-staged progress for the (~25s) synchronous scan call, so it feels live. */

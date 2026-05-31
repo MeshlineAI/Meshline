@@ -40,7 +40,7 @@ const serif = Newsreader({
   adjustFontFallback: false,
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://meshline.io";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://meshline.tech";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
