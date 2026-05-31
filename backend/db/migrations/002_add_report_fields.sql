@@ -1,0 +1,2 @@
+ALTER TABLE scans ADD COLUMN IF NOT EXISTS report_markdown TEXT;
+ALTER TABLE scans ADD COLUMN IF NOT EXISTS report_hash TEXT;
