@@ -10,10 +10,6 @@ import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Overview", match: (p: string) => p === "/" },
-  { href: "/#how", label: "How it works", match: () => false },
-  { href: "/#scan-types", label: "Scan types", match: () => false },
-  { href: "/#agents", label: "For agents", match: () => false },
   { href: "/token", label: "Token", match: (p: string) => p.startsWith("/token") },
   { href: "/dashboard", label: "Dashboard", match: (p: string) => p.startsWith("/dashboard") },
 ];
@@ -72,8 +68,9 @@ export function Nav() {
     <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-3 sm:pt-4">
       <nav
         className={cn(
-          "glass flex w-full max-w-6xl items-center justify-between rounded-full pl-5 pr-2.5 transition-all duration-500",
-          scrolled ? "py-2 shadow-glass-lg" : "py-3",
+          "flex w-full max-w-6xl items-center justify-between rounded-full border pl-5 pr-2.5 transition-all duration-500",
+          // Transparent over the page at the top; condenses into a glass pill on scroll.
+          scrolled ? "glass py-2 shadow-glass-lg" : "border-transparent py-3",
         )}
         style={{ borderRadius: 999 }}
       >

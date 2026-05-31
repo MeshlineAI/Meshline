@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,10 @@ declare global {
 
 const BASE_CHAIN_ID = "0x2105"; // 8453
 
+// rdns of the last wallet the user *explicitly* connected. Presence of this key
+// is the only thing that authorizes a silent session restore on page load.
+const STORAGE_KEY = "meshline:wallet";
+
 // Known wallets we always surface (with install links if not detected).
 export interface WalletOption {
   key: string;
@@ -50,6 +55,7 @@ export interface WalletOption {
 }
 
 const FALLBACKS: Omit<WalletOption, "installed" | "provider">[] = [
+  { key: "phantom", name: "Phantom", icon: null, rdns: "app.phantom", installUrl: "https://phantom.app/download" },
   { key: "coinbase", name: "Coinbase Wallet", icon: null, rdns: "com.coinbase.wallet", installUrl: "https://www.coinbase.com/wallet/downloads" },
   { key: "metamask", name: "MetaMask", icon: null, rdns: "io.metamask", installUrl: "https://metamask.io/download/" },
 ];
@@ -93,22 +99,53 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("eip6963:announceProvider", onAnnounce);
   }, []);
 
-  // Restore an already-authorized session silently (no redirect).
+  // Only restore a session the user explicitly opened before — never on a first
+  // visit and never after disconnect. If the flag is absent we touch no wallet at
+  // all (so nothing pops up on load); if present we re-read accounts *silently*
+  // via eth_accounts, which never prompts.
+  const restoredRef = useRef(false);
   useEffect(() => {
-    const eth = window.ethereum;
-    if (!eth) return;
-    eth
-      .request({ method: "eth_accounts" })
+    if (restoredRef.current || typeof window === "undefined") return;
+
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(STORAGE_KEY);
+    } catch {
+      stored = null;
+    }
+    if (!stored) return; // user hasn't connected (or has disconnected) → do nothing
+
+    const provider =
+      stored === "injected"
+        ? window.ethereum
+        : detected.find((d) => d.info.rdns === stored)?.provider;
+    // EIP-6963 wallets announce asynchronously; if the matching provider hasn't
+    // shown up yet, bail and let the next `detected` update retry.
+    if (!provider) return;
+
+    restoredRef.current = true;
+    provider
+      .request({ method: "eth_accounts" }) // silent — no prompt
       .then((accts) => {
         const list = accts as string[];
         if (list?.length) {
           setAddress(list[0]);
-          setActive(eth);
+          setActive(provider);
+          provider
+            .request({ method: "eth_chainId" })
+            .then((c) => setChainId(c as string))
+            .catch(() => {});
+        } else {
+          // permission was revoked in the wallet → forget the session
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch {
+            /* noop */
+          }
         }
       })
       .catch(() => {});
-    eth.request({ method: "eth_chainId" }).then((c) => setChainId(c as string)).catch(() => {});
-  }, []);
+  }, [detected]);
 
   // Bind account/chain change listeners to the active provider.
   useEffect(() => {
@@ -188,6 +225,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         if (accts?.length) {
           setActive(eth);
           setAddress(accts[0]);
+          // Remember the explicit choice so we can silently restore it next load.
+          try {
+            localStorage.setItem(STORAGE_KEY, option.rdns ?? "injected");
+          } catch {
+            /* noop */
+          }
           const c = (await eth.request({ method: "eth_chainId" })) as string;
           setChainId(c);
           if (c !== BASE_CHAIN_ID) {
@@ -211,6 +254,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const disconnect = useCallback(() => {
     setAddress(null);
+    setChainId(null);
+    setActive(null);
+    // Drop the restore flag so we don't silently reconnect on the next load.
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
   }, []);
 
   const value = useMemo<WalletState>(
