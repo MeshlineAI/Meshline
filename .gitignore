@@ -20,6 +20,10 @@
 .DS_Store
 *.pem
 
+# stray scratch media dropped at the repo root (real assets live in public/)
+/*.mp4
+/image-removebg-preview*.png
+
 # debug
 npm-debug.log*
 yarn-debug.log*
