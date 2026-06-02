@@ -90,6 +90,42 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0) scale(1)" },
           "50%": { transform: "translateY(-3px) scale(1.012)" },
         },
+        // Slow, organic drift for the ambient gradient blooms — three variants
+        // so the page-wide background never reads as a synced loop.
+        "drift-a": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
+          "50%": { transform: "translate3d(6%,-5%,0) scale(1.12)" },
+        },
+        "drift-b": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1.05)" },
+          "50%": { transform: "translate3d(-7%,6%,0) scale(0.95)" },
+        },
+        "drift-c": {
+          "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
+          "33%": { transform: "translate3d(5%,4%,0) scale(1.1)" },
+          "66%": { transform: "translate3d(-4%,-3%,0) scale(0.97)" },
+        },
+        // Slow pan of the dotted grid for subtle living texture.
+        "grid-pan": {
+          "0%": { backgroundPosition: "0 0" },
+          "100%": { backgroundPosition: "28px 28px" },
+        },
+        // Flowing brand gradient across clipped text.
+        "gradient-pan": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        // Scroll hint dot travelling down its track.
+        "scroll-cue": {
+          "0%": { transform: "translateY(0)", opacity: "0" },
+          "30%": { opacity: "1" },
+          "100%": { transform: "translateY(14px)", opacity: "0" },
+        },
+        // Soft expanding glow ring — for the highlighted pricing card.
+        "pulse-ring": {
+          "0%, 100%": { boxShadow: "0 0 0 1px rgba(0,229,255,0.35), 0 0 44px -16px rgba(0,229,255,0.55)" },
+          "50%": { boxShadow: "0 0 0 1px rgba(0,229,255,0.6), 0 0 60px -12px rgba(0,229,255,0.85)" },
+        },
       },
       animation: {
         "pulse-glow": "pulse-glow 2.4s ease-in-out infinite",
@@ -99,6 +135,13 @@ const config: Config = {
         shimmer: "shimmer 2s infinite",
         sheen: "sheen 3.6s ease-in-out infinite",
         "glass-bob": "glass-bob 7s ease-in-out infinite",
+        "drift-a": "drift-a 22s ease-in-out infinite",
+        "drift-b": "drift-b 26s ease-in-out infinite",
+        "drift-c": "drift-c 30s ease-in-out infinite",
+        "grid-pan": "grid-pan 6s linear infinite",
+        "gradient-pan": "gradient-pan 6s ease-in-out infinite",
+        "scroll-cue": "scroll-cue 1.8s ease-in-out infinite",
+        "pulse-ring": "pulse-ring 3.4s ease-in-out infinite",
       },
     },
   },

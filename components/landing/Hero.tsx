@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import { VideoBackground } from "@/components/ui/VideoBackground";
 import { useWallet } from "@/components/wallet/WalletProvider";
 
@@ -24,6 +24,8 @@ export function Hero() {
   const contentY = useTransform(scrollYProgress, [0, 1], [0, 70]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
   const panelY = useTransform(scrollYProgress, [0, 1], [0, -48]);
+  // Scroll cue fades out the moment the page starts moving.
+  const cueOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
 
   return (
     <section ref={ref} className="relative flex min-h-[100svh] items-center overflow-hidden">
@@ -60,7 +62,7 @@ export function Hero() {
             className="mt-6 font-display text-[clamp(2.6rem,7vw,5.4rem)] font-semibold leading-[0.98] tracking-[-0.04em] text-white"
           >
             Trust, but{" "}
-            <span className="text-gradient">verify</span>
+            <span className="text-gradient-flow">verify</span>
             <br />
             every address
             <br />
@@ -124,8 +126,11 @@ export function Hero() {
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="panel mx-auto w-full max-w-sm p-6 lg:ml-auto lg:mr-0"
+            className="mx-auto w-full max-w-sm lg:ml-auto lg:mr-0"
           >
+            {/* inner wrapper carries the idle float so it never fights the
+                framer entrance/parallax transforms on the elements above. */}
+            <div className="panel animate-glass-bob p-6">
             <div className="flex items-center justify-between">
               <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-faint">
                 Contract · Base
@@ -186,8 +191,22 @@ export function Hero() {
               </span>
               <ArrowUpRight size={14} className="text-muted" />
             </div>
+            </div>
           </motion.div>
         </motion.div>
+      </motion.div>
+
+      {/* scroll cue — gentle hint that there's more below the fold */}
+      <motion.div
+        style={{ opacity: cueOpacity }}
+        className="pointer-events-none absolute inset-x-0 bottom-7 z-10 hidden flex-col items-center gap-2 sm:flex"
+      >
+        <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-faint">
+          Scroll
+        </span>
+        <span className="flex h-9 w-[22px] items-start justify-center rounded-full border border-white/15 p-1.5">
+          <ChevronDown size={12} className="animate-scroll-cue text-accent" />
+        </span>
       </motion.div>
     </section>
   );

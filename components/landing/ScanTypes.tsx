@@ -54,7 +54,7 @@ const TYPES = [
 
 export function ScanTypes() {
   return (
-    <section id="scan-types" className="relative z-10 border-b border-white/10 py-24">
+    <section id="scan-types" className="relative z-10 border-b border-white/10 py-20 sm:py-24">
       <div className="container-mesh">
         <SectionHeading
           index="03"
@@ -67,50 +67,61 @@ export function ScanTypes() {
           description="Contract, wallet, or Base app — Meshline picks the right pipeline automatically and returns a MESH Score with a full breakdown."
         />
 
-        <div className="mt-16 grid gap-5 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 sm:mt-16 lg:grid-cols-3">
           {TYPES.map((t, i) => (
             <Reveal key={t.name} delay={i * 0.08}>
-              <div className="panel group flex h-full flex-col p-7 transition-colors hover:border-white/20">
-                <div className="mb-5 flex items-center justify-between">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-xl border"
-                    style={{ borderColor: `${t.accent}55`, color: t.accent, background: `${t.accent}0d` }}
-                  >
-                    <t.icon size={20} />
-                  </div>
-                  <span
-                    className="mono rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-widest"
-                    style={{ borderColor: `${t.accent}40`, color: t.accent }}
-                  >
-                    {t.count}
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-bold text-white">{t.name}</h3>
-                <p className="mt-1.5 text-sm text-muted">{t.body}</p>
-
-                <div className="mt-5 flex flex-wrap gap-1.5">
-                  {t.signals.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] text-[#9fb3c9]"
+              <div className="panel lift group relative flex h-full flex-col overflow-hidden p-7 transition-colors hover:border-white/20">
+                {/* per-type accent glow that blooms from the top on hover */}
+                <div
+                  className="glow-on-hover pointer-events-none absolute inset-0"
+                  style={{ background: `radial-gradient(130% 85% at 50% 0%, ${t.accent}26, transparent 62%)` }}
+                />
+                <div className="relative z-[1] flex h-full flex-col">
+                  <div className="mb-5 flex items-center justify-between">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-105"
+                      style={{ borderColor: `${t.accent}55`, color: t.accent, background: `${t.accent}0d` }}
                     >
-                      {s}
+                      <t.icon size={20} />
+                    </div>
+                    <span
+                      className="mono rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-widest"
+                      style={{ borderColor: `${t.accent}40`, color: t.accent }}
+                    >
+                      {t.count}
                     </span>
-                  ))}
-                </div>
+                  </div>
 
-                <div className="mt-auto flex items-center justify-between pt-6">
-                  <span className="mono text-[11px] uppercase tracking-widest text-muted-faint">
-                    {t.price}
-                  </span>
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold transition-colors"
-                    style={{ color: t.accent }}
-                  >
-                    Open scanner <ArrowRight size={14} />
-                  </Link>
+                  <h3 className="text-lg font-bold text-white">{t.name}</h3>
+                  <p className="mt-1.5 text-sm text-muted">{t.body}</p>
+
+                  <div className="mt-5 flex flex-wrap gap-1.5">
+                    {t.signals.map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] text-[#9fb3c9] transition-colors group-hover:border-white/20"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between pt-6">
+                    <span className="mono text-[11px] uppercase tracking-widest text-muted-faint">
+                      {t.price}
+                    </span>
+                    <Link
+                      href="/dashboard"
+                      className="group/cta inline-flex items-center gap-1.5 text-xs font-bold transition-colors"
+                      style={{ color: t.accent }}
+                    >
+                      Open scanner{" "}
+                      <ArrowRight
+                        size={14}
+                        className="transition-transform duration-300 group-hover:translate-x-1"
+                      />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </Reveal>

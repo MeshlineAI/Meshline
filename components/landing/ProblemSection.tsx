@@ -12,8 +12,8 @@ const SIGNALS = [
 
 export function ProblemSection() {
   return (
-    <section className="relative z-10 overflow-hidden border-b border-white/10 py-24">
-      <div className="container-mesh grid items-center gap-12 lg:grid-cols-2">
+    <section className="relative z-10 overflow-hidden border-b border-white/10 py-20 sm:py-24">
+      <div className="container-mesh grid items-center gap-10 sm:gap-12 lg:grid-cols-2">
         {/* video card */}
         <Reveal className="order-2 lg:order-1">
           <Parallax offset={36}>
@@ -57,8 +57,8 @@ export function ProblemSection() {
           <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
             {SIGNALS.map((s, i) => (
               <Reveal key={s.label} delay={i * 0.05}>
-                <div className="flex items-baseline gap-4 py-4">
-                  <span className="mono w-24 shrink-0 text-xl font-semibold text-tier-c">
+                <div className="group flex items-baseline gap-3 py-4 transition-colors sm:gap-4">
+                  <span className="mono w-[4.5rem] shrink-0 text-lg font-semibold text-tier-c transition-transform duration-300 group-hover:-translate-y-0.5 sm:w-24 sm:text-xl">
                     {s.magnitude}
                   </span>
                   <span className="flex-1 text-sm text-[#c2d2e4]">{s.label}</span>

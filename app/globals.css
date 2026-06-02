@@ -189,6 +189,24 @@ h6 {
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
+  /* Same clipped brand gradient, but wider and slowly flowing left↔right
+     for a living shimmer on key emphasis words. */
+  .text-gradient-flow {
+    background: linear-gradient(
+      110deg,
+      #00e5ff 0%,
+      #46e0b4 28%,
+      #aef73c 50%,
+      #46e0b4 72%,
+      #00e5ff 100%
+    );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: gradient-pan 7s ease-in-out infinite;
+  }
   .text-accent {
     color: var(--accent);
   }
@@ -242,6 +260,34 @@ h6 {
   .grid-dots {
     background-image: radial-gradient(rgba(0, 229, 255, 0.12) 1px, transparent 1px);
     background-size: 28px 28px;
+  }
+
+  /* Hover-lift for cards/panels — a gentle float + crisper shadow on hover.
+     Pairs with `.panel`; keep the transition on the base so it eases both ways. */
+  .lift {
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s ease, box-shadow 0.45s ease;
+    will-change: transform;
+  }
+  .lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.95),
+      0 0 0 1px rgba(0, 229, 255, 0.18);
+  }
+
+  /* A soft brand-tinted glow that fades in on hover of a `group` parent.
+     Put on a pointer-events-none child layer inside a card. */
+  .glow-on-hover {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: radial-gradient(
+      130% 90% at 50% 0%,
+      rgba(0, 229, 255, 0.16),
+      transparent 60%
+    );
+  }
+  .group:hover .glow-on-hover {
+    opacity: 1;
   }
 
   .glow-cyan {
@@ -395,6 +441,33 @@ h6 {
 .prose-mesh th {
   background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
+}
+
+/* Keyframes referenced directly by component classes above (.text-gradient-flow,
+   .glass-specular). Defined here so they survive Tailwind's purge — Tailwind only
+   emits @keyframes for animations used via an `animate-*` utility in markup. */
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes sheen {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  60%,
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

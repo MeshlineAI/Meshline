@@ -48,7 +48,7 @@ const TIERS = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="relative z-10 border-b border-white/10 py-24">
+    <section id="pricing" className="relative z-10 border-b border-white/10 py-20 sm:py-24">
       <div className="container-mesh">
         <SectionHeading
           index="05"
@@ -61,13 +61,13 @@ export function Pricing() {
           description="The first 3 scans every month are free — no signup. Agents pay per query."
         />
 
-        <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-5 sm:mt-16 md:grid-cols-2 lg:grid-cols-4">
           {TIERS.map((t, i) => (
             <Reveal key={t.name} delay={i * 0.07}>
               <div
                 className={cn(
-                  "panel relative flex h-full flex-col p-7",
-                  t.highlight && "border-accent/50 shadow-glow-cyan",
+                  "panel lift relative flex h-full flex-col p-7",
+                  t.highlight && "border-accent/50 animate-pulse-ring",
                 )}
               >
                 {t.highlight && (

@@ -1,5 +1,6 @@
 import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
+import { cn } from "@/lib/utils";
 
 const STATS = [
   { label: "Scans today", value: 12847 },
@@ -17,9 +18,17 @@ export function StatsBar() {
             <Reveal
               key={s.label}
               delay={i * 0.08}
-              className="border-white/[0.06] px-5 py-9 text-center [&:not(:last-child)]:border-r"
+              className={cn(
+                "group px-5 py-9 text-center transition-colors hover:bg-white/[0.02]",
+                // 2-col mobile grid lines: left column gets a right divider,
+                // top row gets a bottom divider.
+                i % 2 === 0 && "border-r",
+                i < 2 && "border-b sm:border-b-0",
+                // 4-col desktop: a right divider between every column but the last.
+                i !== 3 && "sm:border-r",
+              )}
             >
-              <div className="font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              <div className="font-display text-3xl font-semibold tracking-tight text-white transition-colors group-hover:text-accent sm:text-4xl">
                 <CountUp to={s.value} />
               </div>
               <div className="eyebrow mt-2">{s.label}</div>

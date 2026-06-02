@@ -39,10 +39,12 @@ function Item({ q, a }: { q: string; a: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-4 py-5 text-left"
+        className="group flex w-full items-center justify-between gap-4 py-5 text-left"
       >
-        <span className="text-sm font-bold text-white sm:text-base">{q}</span>
-        <span className="shrink-0 text-cyan-brand">
+        <span className="text-sm font-bold text-white transition-colors group-hover:text-accent sm:text-base">
+          {q}
+        </span>
+        <span className="shrink-0 text-cyan-brand transition-transform duration-300 group-hover:scale-110">
           {open ? <Minus size={18} /> : <Plus size={18} />}
         </span>
       </button>
@@ -60,10 +62,10 @@ function Item({ q, a }: { q: string; a: string }) {
 
 export function FAQ() {
   return (
-    <section id="faq" className="relative z-10 border-b border-white/10 py-24">
+    <section id="faq" className="relative z-10 border-b border-white/10 py-20 sm:py-24">
       <div className="container-mesh max-w-3xl">
         <SectionHeading index="06" eyebrow="FAQ" title="Questions, answered." />
-        <div className="mt-12">
+        <div className="mt-10 sm:mt-12">
           {FAQS.map((f) => (
             <Item key={f.q} {...f} />
           ))}

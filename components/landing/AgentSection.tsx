@@ -17,7 +17,7 @@ const PERKS = [
 
 export function AgentSection() {
   return (
-    <section id="agents" className="relative z-10 border-b border-white/10 py-24">
+    <section id="agents" className="relative z-10 border-b border-white/10 py-20 sm:py-24">
       <div className="container-mesh">
         <SectionHeading
           index="04"
@@ -63,6 +63,7 @@ export function AgentSection() {
                   <span className="text-white">&quot;meshline.tech/scan/…&quot;</span>
                   {"\n"}
                   <span className="text-[#b9cbe0]">{"}"}</span>
+                  <span className="animate-blink ml-1 text-acid">▍</span>
                 </code>
               </pre>
             </div>
@@ -80,7 +81,7 @@ export function AgentSection() {
                 </thead>
                 <tbody className="divide-y divide-white/10">
                   {ENDPOINTS.map((e) => (
-                    <tr key={e.path} className="align-top">
+                    <tr key={e.path} className="align-top transition-colors hover:bg-white/[0.03]">
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
                           <span className="rounded-md border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-acid">
