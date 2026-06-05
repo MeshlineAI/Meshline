@@ -81,8 +81,9 @@ async function persistAndRespond(res: any, params: {
   target: string;
   scanType: ScanType;
   signals: Signal[];
+  attest: boolean;
 }) {
-  const { target, scanType, signals } = params;
+  const { target, scanType, signals, attest: shouldAttest } = params;
   const { score, tier } = calculateScore(signals);
   const top = topSignals(signals);
   const id = randomUUID();
@@ -92,17 +93,31 @@ async function persistAndRespond(res: any, params: {
   const report = await generateReport({ target, scanType, meshScore: score, tier, signals });
   const reportHash = hashReport(report);
 
-  // Persist immediately with eas_uid = null; attestation backfills it async
+  // Persist immediately with eas_uid = null. Onchain attestation (which costs
+  // gas) only happens for paid scans that explicitly requested it.
   await pool.query(
     `INSERT INTO scans (id, target, scan_type, mesh_score, tier, report_json, report_markdown, report_hash, eas_uid, report_url)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
     [id, target, scanType, score, tier, JSON.stringify({ signals }), report, reportHash, null, reportUrl]
   );
 
-  res.json({ id, target, scanType, meshScore: score, tier, signals, reportMarkdown: report, reportHash, easUid: null, reportUrl, scannedAt });
+  res.json({
+    id, target, scanType, meshScore: score, tier, signals,
+    reportMarkdown: report, reportHash,
+    easUid: null,
+    attestationPending: shouldAttest, // true → poll /v1/report/:uid for easUid
+    reportUrl, scannedAt,
+  });
 
-  // Fire-and-forget: attest onchain and backfill, after the response is sent
-  attestInBackground({ id, target, scanType, score, tier, top, report, reportUrl });
+  // Fire-and-forget onchain attestation — only when paid + explicitly requested
+  if (shouldAttest) {
+    attestInBackground({ id, target, scanType, score, tier, top, report, reportUrl });
+  }
+}
+
+/** True only when the scan was paid AND ?attest=true was requested. */
+function wantsAttestation(req: { scanPaid?: boolean; query: any }): boolean {
+  return Boolean(req.scanPaid) && req.query?.attest === "true";
 }
 
 // ── GET /v1/scan/contract/:address ────────────────────────────────────────────
@@ -121,7 +136,7 @@ router.get(
       const address = req.params.address as `0x${string}`;
       const data = await fetchContractData(address);
       const signals = await runContractSignals(data);
-      await persistAndRespond(res, { target: address, scanType: "contract", signals });
+      await persistAndRespond(res, { target: address, scanType: "contract", signals, attest: wantsAttestation(req) });
     } catch (err) {
       next(err);
     }
@@ -144,7 +159,7 @@ router.get(
       const address = req.params.address as `0x${string}`;
       const data = await fetchWalletData(address);
       const signals = await runWalletSignals(data);
-      await persistAndRespond(res, { target: address, scanType: "wallet", signals });
+      await persistAndRespond(res, { target: address, scanType: "wallet", signals, attest: wantsAttestation(req) });
     } catch (err) {
       next(err);
     }
@@ -174,7 +189,7 @@ router.get(
         appSignals.phishingPattern(data),
         appSignals.cspPolicy(data),
       ];
-      await persistAndRespond(res, { target: url, scanType: "app", signals });
+      await persistAndRespond(res, { target: url, scanType: "app", signals, attest: wantsAttestation(req) });
     } catch (err) {
       next(err);
     }

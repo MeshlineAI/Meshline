@@ -190,6 +190,8 @@ export function x402Gate(amountUsdc: string, description: string) {
       return;
     }
 
+    // Settled payment — eligible for onchain attestation (which costs gas).
+    req.scanPaid = true;
     next();
   };
 }
