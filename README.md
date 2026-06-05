@@ -112,3 +112,4 @@ ERC-20 on Base. Fixed supply: 50,000,000 MESH.
 ## Tech stack
 
 Base L2 · Bun · Express · PostgreSQL · Viem · Gemini AI · EAS · x402 · Next.js · Tailwind · Foundry
+
