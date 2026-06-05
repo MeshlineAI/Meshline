@@ -38,3 +38,29 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ── env files (all real envs — keep only *.example tracked) ──
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# backend deps & build
+backend/node_modules/
+backend/dist/
+
+# contracts (Foundry) artifacts
+contracts/out/
+contracts/cache/
+contracts/lib/
+contracts/broadcast/
+
+# product docs
+/docs
+
+# internal dev docs — never commit
+frontend-integration.md
+frontend-integration-*.md
+tech-updates.md
