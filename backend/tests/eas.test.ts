@@ -1,25 +1,21 @@
 /**
- * EAS attestation integration test.
- * Writes a REAL attestation to Base mainnet.
+ * EAS attestation tests.
  *
- * Requires: BASE_RPC_URL, EAS_PRIVATE_KEY, EAS_SCHEMA_UID
- * The attester wallet needs ETH on Base for gas (~0.001 ETH is enough).
+ * The live attestation test writes a REAL transaction to Base mainnet and costs
+ * gas every run — it is OPT-IN via RUN_EAS_LIVE_TEST=1 so it never runs in CI
+ * or normal local runs (which would silently drain the attester wallet).
+ *
+ * To run it manually (with a funded EAS_PRIVATE_KEY):
+ *   RUN_EAS_LIVE_TEST=1 bun test tests/eas.test.ts
  */
 
 import { describe, it, expect } from "bun:test";
 import { attest, hashReport } from "../src/services/eas";
 
-function requireEnv(...keys: string[]) {
-  const missing = keys.filter((k) => !process.env[k]);
-  if (missing.length > 0) {
-    throw new Error(`Missing required env vars: ${missing.join(", ")}`);
-  }
-}
+const runLive = process.env.RUN_EAS_LIVE_TEST === "1";
 
 describe("EAS attestation", () => {
-  it("writes a scan attestation to Base and returns a UID", async () => {
-    requireEnv("BASE_RPC_URL", "EAS_PRIVATE_KEY", "EAS_SCHEMA_UID");
-
+  it.if(runLive)("writes a scan attestation to Base and returns a UID (live, opt-in)", async () => {
     const reportMarkdown = "# Test Report\nThis is a test attestation from Meshline.";
     const uid = await attest({
       target: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
@@ -28,7 +24,7 @@ describe("EAS attestation", () => {
       tier: "AAA",
       topSignals: [],
       reportMarkdown,
-      reportUrl: "https://meshline.io/scan/test",
+      reportUrl: "https://meshline.tech/scan/test",
     });
 
     expect(typeof uid).toBe("string");
