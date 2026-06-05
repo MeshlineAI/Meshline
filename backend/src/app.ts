@@ -13,12 +13,43 @@ const app = express();
 // Render sits behind exactly one proxy hop — required for correct req.ip
 app.set("trust proxy", 1);
 
+const ALLOWED_ORIGINS = [
+  ...config.cors.origins,
+  "https://meshline.tech",
+  "https://meshline.io",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
 app.use(
   cors({
-    origin: config.cors.origins,
+    origin: (origin, callback) => {
+      // Allow server-to-server or curl requests with no origin header
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const isAllowed = ALLOWED_ORIGINS.some((allowed) => {
+        if (allowed === origin) return true;
+        if (allowed.includes("*")) {
+          const regex = new RegExp("^" + allowed.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
+          return regex.test(origin);
+        }
+        return false;
+      });
+
+      const isVercelPreview = /\.vercel\.app$/.test(origin);
+
+      if (isAllowed || isVercelPreview) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Request origin blocked: "${origin}"`);
+        callback(null, false);
+      }
+    },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "X-Payment"],
-    // Custom headers the browser must be able to read
     exposedHeaders: ["X-Payment-Requirements", "X-Free-Scans-Remaining"],
     maxAge: 86400,
   })
