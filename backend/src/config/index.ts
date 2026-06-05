@@ -60,4 +60,8 @@ export const config = {
   github: {
     token: process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN,
   },
+
+  redis: {
+    url: process.env.REDIS_URL,
+  },
 } as const;

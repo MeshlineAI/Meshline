@@ -17,6 +17,7 @@
     "ethers": "^6.13.5",
     "express": "^4.21.2",
     "express-rate-limit": "^8.5.2",
+    "ioredis": "^5.11.1",
     "pdfkit": "^0.18.0",
     "pg": "^8.13.3",
     "viem": "^2.21.0"
