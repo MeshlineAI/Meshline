@@ -15,7 +15,7 @@ const LOOPBACK_IPS = ["::1", "::ffff:127.0.0.1", "127.0.0.1"];
 
 async function exhaustFreeTier() {
   for (const ip of LOOPBACK_IPS) {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       await pool.query(
         "INSERT INTO free_scan_usage (identifier, scan_type) VALUES ($1, $2)",
         [ip, "contract"]
@@ -43,7 +43,7 @@ beforeAll(async () => {
   await migrate();
   await cleanupFreeTier();
   await exhaustFreeTier();
-}, 15_000);
+}, 30_000);
 
 afterAll(async () => {
   await cleanupFreeTier();

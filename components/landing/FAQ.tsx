@@ -12,7 +12,7 @@ const FAQS = [
   },
   {
     q: "Do I need a wallet or an account?",
-    a: "No. The first 3 contract scans and 3 wallet scans each month are free per IP — no signup. A wallet is only needed once you exceed the free quota or want Pro/Enterprise features.",
+    a: "No. The first 5 contract scans and 5 wallet scans each month are free per IP — no signup. A wallet is only needed once you exceed the free quota or want Pro/Enterprise features.",
   },
   {
     q: "What does “EAS-attested” mean?",

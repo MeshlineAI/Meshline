@@ -9,7 +9,7 @@ const TYPES = [
     accent: "#00E5FF",
     name: "Contract Intel",
     count: "12 signals",
-    price: "3 free · then 0.001 USDC",
+    price: "5 free · then 0.001 USDC",
     body: "Deep risk read of any Base contract.",
     signals: [
       "Source Verification",
@@ -31,7 +31,7 @@ const TYPES = [
     accent: "#46E0B4",
     name: "Wallet Intel",
     count: "5 signals",
-    price: "3 free · then 0.001 USDC",
+    price: "5 free · then 0.001 USDC",
     body: "Behavioral risk profile for any address.",
     signals: [
       "Approval Exposure",

@@ -8,7 +8,7 @@ const TIERS = [
     name: "Free",
     price: "$0",
     cadence: "",
-    scans: "3 contract scans / mo",
+    scans: "5 contract scans / mo",
     cta: "Start scanning",
     href: "/dashboard",
     features: ["MESH Score + summary report", "Embeddable trust badge", "Public report page", "EAS attestation"],
@@ -58,7 +58,7 @@ export function Pricing() {
               Free to start. <span className="text-gradient">Scale when you ship.</span>
             </>
           }
-          description="The first 3 scans every month are free — no signup. Agents pay per query."
+          description="The first 5 scans every month are free — no signup. Agents pay per query."
         />
 
         <div className="mt-12 grid gap-5 sm:mt-16 md:grid-cols-2 lg:grid-cols-4">

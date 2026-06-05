@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { pool } from "../db";
 
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 5;
 
 function clientIdentifier(req: Request): string {
   // req.ip is derived from the trusted proxy chain ("trust proxy" is set in

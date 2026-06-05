@@ -201,7 +201,7 @@ export function ScanInput({ autoFocus = false }: { autoFocus?: boolean }) {
       </div>
 
       <p className="mt-3 text-xs text-muted-faint">
-        3 free scans · No signup · AI report in ~30 seconds
+        5 free scans · No signup · AI report in ~30 seconds
       </p>
 
       {error && (

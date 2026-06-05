@@ -61,7 +61,7 @@ export function DashboardContent() {
             </div>
             <p className="mt-3 max-w-xl text-sm text-muted">
               Paste any Base contract, wallet address, or app URL. Meshline returns a MESH Score and
-              a full AI risk report, attested onchain via EAS. First 3 scans each month are free.
+              a full AI risk report, attested onchain via EAS. First 5 scans each month are free.
             </p>
             <div className="mt-6 flex justify-start">
               <ScanInput />
