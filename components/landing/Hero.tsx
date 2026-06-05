@@ -16,7 +16,7 @@ const SIGNALS = [
 
 // Token contract address — drop the real 0x… CA in here at launch; until it
 // starts with "0x" the hero shows a "Coming soon" placeholder slot instead.
-const CONTRACT_ADDRESS = "Coming soon";
+const CONTRACT_ADDRESS = "0xe51190b973f32024c41471cc71c22c1f97e76b07";
 const CA_IS_LIVE = CONTRACT_ADDRESS.startsWith("0x");
 
 export function Hero() {
