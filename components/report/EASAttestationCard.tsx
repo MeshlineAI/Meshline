@@ -51,9 +51,9 @@ export function EASAttestationCard({ uid, easUid: initialEasUid, easPayload, rep
       } else {
         setError("Attestation verification failed.");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("[eas] attestation error:", err);
-      setError(err?.message ?? "Transaction rejected or failed.");
+      setError((err as { message?: string })?.message ?? "Transaction rejected or failed.");
     } finally {
       setAttesting(false);
       setSubmitting(false);
