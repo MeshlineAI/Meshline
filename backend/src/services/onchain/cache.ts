@@ -14,6 +14,7 @@ if (config.redis.url) {
     redis = new Redis(config.redis.url, {
       maxRetriesPerRequest: 1,
       connectTimeout: 2000,
+      enableOfflineQueue: false,
       retryStrategy(times) {
         if (times > 3) {
           isRedisAvailable = false;
