@@ -168,6 +168,7 @@ export default async function ScanReportPage({ params }: { params: { uid: string
             <EASAttestationCard
               uid={report.id}
               easUid={report.easUid}
+              easPayload={report.easPayload ?? null}
               reportHash={report.reportHash}
               scannedAt={report.scannedAt}
             />

@@ -1,57 +1,64 @@
 "use client";
 
-// EAS attestation is now written in the background *after* a scan returns, so
-// `easUid` is null on a fresh report (frontend-integration.md). This card polls
-// GET /v1/report/:uid until the attestation lands, shows an "attestation pending"
-// state meanwhile, and refreshes the server-rendered page so the header link
-// backfills too.
-
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Loader2, ShieldCheck } from "lucide-react";
-import { easAttestationUrl, getReport } from "@/lib/api";
+import { ExternalLink, Loader2, ShieldCheck, Wallet } from "lucide-react";
+import { easAttestationUrl, submitAttestation } from "@/lib/api";
 import { truncateMiddle } from "@/lib/utils";
+import { useWallet } from "@/components/wallet/WalletProvider";
 
 interface Props {
   uid: string;
   easUid: string;
+  easPayload: { to: string; data: string } | null;
   reportHash: string;
   scannedAt: number;
 }
 
-const POLL_INTERVAL_MS = 4000;
-const MAX_POLLS = 8; // ~32s — attestation typically lands within seconds
-
-export function EASAttestationCard({ uid, easUid: initialEasUid, reportHash, scannedAt }: Props) {
+export function EASAttestationCard({ uid, easUid: initialEasUid, easPayload, reportHash, scannedAt }: Props) {
   const router = useRouter();
   const [easUid, setEasUid] = useState(initialEasUid);
-  const polls = useRef(0);
+  const [attesting, setAttesting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (easUid || !uid) return; // already attested — nothing to poll for
-    let cancelled = false;
-    const id = setInterval(async () => {
-      if (polls.current >= MAX_POLLS) {
-        clearInterval(id);
-        return;
+  const { address, onBase, provider, openPicker, switchToBase } = useWallet();
+
+  const handleAttest = async () => {
+    if (!provider || !address || !easPayload) return;
+    setAttesting(true);
+    setError(null);
+    try {
+      const txHash = (await provider.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: easPayload.to,
+            data: easPayload.data,
+            value: "0x0",
+          },
+        ],
+      })) as string;
+
+      setAttesting(false);
+      setSubmitting(true);
+
+      const result = await submitAttestation(uid, txHash);
+      if (result.success && result.easUid) {
+        setEasUid(result.easUid);
+        router.refresh();
+      } else {
+        setError("Attestation verification failed.");
       }
-      polls.current += 1;
-      try {
-        const r = await getReport(uid);
-        if (!cancelled && r.easUid) {
-          clearInterval(id);
-          setEasUid(r.easUid);
-          router.refresh(); // re-render the server page so the header link backfills
-        }
-      } catch {
-        /* transient — keep polling */
-      }
-    }, POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [easUid, uid, router]);
+    } catch (err: any) {
+      console.error("[eas] attestation error:", err);
+      setError(err?.message ?? "Transaction rejected or failed.");
+    } finally {
+      setAttesting(false);
+      setSubmitting(false);
+    }
+  };
 
   const pending = !easUid;
   const when = scannedAt
@@ -71,7 +78,7 @@ export function EASAttestationCard({ uid, easUid: initialEasUid, reportHash, sca
       <dl className="mt-5 space-y-3 text-xs">
         <Row
           label="EAS UID"
-          value={pending ? "pending…" : truncateMiddle(easUid, 10, 8)}
+          value={pending ? "Not attested yet" : truncateMiddle(easUid, 10, 8)}
           title={easUid || undefined}
           dim={pending}
         />
@@ -79,10 +86,45 @@ export function EASAttestationCard({ uid, easUid: initialEasUid, reportHash, sca
         <Row label="Scanned at" value={when} />
       </dl>
 
+      {error && (
+        <p className="mt-3 text-xs text-red-400">
+          {error}
+        </p>
+      )}
+
       {pending ? (
-        <div className="mt-5 inline-flex items-center gap-2 border border-white/10 px-4 py-2 text-xs text-muted">
-          <Loader2 size={13} className="animate-spin text-cyan-brand" />
-          Attestation pending — writing to Base…
+        <div className="mt-5 flex flex-col items-start gap-3">
+          {address === null ? (
+            <button
+              onClick={openPicker}
+              className="inline-flex items-center gap-2 border border-white/20 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/10 cursor-pointer"
+            >
+              <Wallet size={13} /> Connect Wallet to Attest
+            </button>
+          ) : !onBase ? (
+            <button
+              onClick={switchToBase}
+              className="inline-flex items-center gap-2 border border-white/20 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/10 cursor-pointer"
+            >
+              Switch to Base to Attest
+            </button>
+          ) : (
+            <button
+              onClick={handleAttest}
+              disabled={attesting || submitting || !easPayload}
+              className="inline-flex items-center gap-2 border border-cyan-brand/40 px-4 py-2 text-xs font-bold text-cyan-brand transition-colors hover:bg-cyan-brand/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {(attesting || submitting) && <Loader2 size={13} className="animate-spin text-cyan-brand" />}
+              {attesting
+                ? "Approve in Wallet..."
+                : submitting
+                ? "Verifying Attestation..."
+                : "Attest on Base"}
+            </button>
+          )}
+          <span className="text-[10px] text-muted-faint">
+            Attesting writes this report directly to Base. Gas fee paid via your wallet.
+          </span>
         </div>
       ) : (
         <a
@@ -121,3 +163,4 @@ function Row({
     </div>
   );
 }
+

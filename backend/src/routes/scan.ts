@@ -8,7 +8,7 @@ import * as walletSignals from "../services/signals/wallet";
 import * as appSignals from "../services/signals/app";
 import { calculateScore, topSignals } from "../services/score";
 import { generateReport } from "../services/ai";
-import { attest, hashReport } from "../services/eas";
+import { hashReport, getAttestTxData } from "../services/eas";
 import { pool } from "../db";
 import type { Signal, ScanType } from "../types";
 import { randomUUID } from "crypto";
@@ -55,28 +55,6 @@ async function runWalletSignals(data: Awaited<ReturnType<typeof fetchWalletData>
   );
 }
 
-/**
- * Attests the scan onchain and backfills eas_uid. Runs in the background after
- * the response is sent — a chain confirmation must never block the request.
- */
-function attestInBackground(params: {
-  id: string;
-  target: string;
-  scanType: ScanType;
-  score: number;
-  tier: ReturnType<typeof calculateScore>["tier"];
-  top: Signal[];
-  report: string;
-  reportUrl: string;
-}): void {
-  const { id, target, scanType, score, tier, top, report, reportUrl } = params;
-  attest({ target, scanType, meshScore: score, tier, topSignals: top, reportMarkdown: report, reportUrl })
-    .then((easUid) =>
-      pool.query(`UPDATE scans SET eas_uid = $1 WHERE id = $2`, [easUid, id])
-    )
-    .catch((err) => console.warn(`[eas] attestation failed for ${id}:`, err?.message));
-}
-
 async function persistAndRespond(res: any, params: {
   target: string;
   scanType: ScanType;
@@ -93,6 +71,24 @@ async function persistAndRespond(res: any, params: {
   const report = await generateReport({ target, scanType, meshScore: score, tier, signals });
   const reportHash = hashReport(report);
 
+  let easPayload = null;
+  if (shouldAttest) {
+    try {
+      easPayload = getAttestTxData({
+        target,
+        scanType,
+        meshScore: score,
+        tier,
+        topSignals: top,
+        reportMarkdown: report,
+        reportUrl,
+        scannedAt,
+      });
+    } catch (err) {
+      console.warn("[eas] failed to generate attest payload for scan:", err);
+    }
+  }
+
   // Persist immediately with eas_uid = null. Onchain attestation (which costs
   // gas) only happens for paid scans that explicitly requested it.
   await pool.query(
@@ -105,14 +101,10 @@ async function persistAndRespond(res: any, params: {
     id, target, scanType, meshScore: score, tier, signals,
     reportMarkdown: report, reportHash,
     easUid: null,
+    easPayload,
     attestationPending: shouldAttest, // true → poll /v1/report/:uid for easUid
     reportUrl, scannedAt,
   });
-
-  // Fire-and-forget onchain attestation — only when paid + explicitly requested
-  if (shouldAttest) {
-    attestInBackground({ id, target, scanType, score, tier, top, report, reportUrl });
-  }
 }
 
 /** True only when the scan was paid AND ?attest=true was requested. */

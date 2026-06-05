@@ -26,6 +26,7 @@ export interface ScanResult {
   reportMarkdown: string;
   reportHash: string;
   easUid: string;
+  easPayload?: { to: string; data: string } | null;
   reportUrl: string;
   scannedAt: number;
   createdAt?: string;
@@ -108,6 +109,7 @@ type RawScan = Partial<{
   reportHash: string;
   easUid: string;
   easAttestUID: string;
+  easPayload: { to: string; data: string } | null;
   reportUrl: string;
   scannedAt: number | string;
   createdAt: string;
@@ -124,6 +126,7 @@ function normalize(raw: RawScan, fallbackType: ScanType, free: number | null): S
     reportMarkdown: raw.reportMarkdown ?? raw.report ?? "",
     reportHash: raw.reportHash ?? "",
     easUid: raw.easUid ?? raw.easAttestUID ?? "",
+    easPayload: raw.easPayload ?? null,
     reportUrl: raw.reportUrl ?? "",
     scannedAt: Number(raw.scannedAt ?? 0),
     createdAt: raw.createdAt,
@@ -201,4 +204,15 @@ export function easAttestationUrl(easUid: string): string {
 export function reportShareUrl(uid: string): string {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://meshline.tech";
   return `${site}/scan/${uid}`;
+}
+
+/** Submit the transaction hash for a user-initiated onchain attestation to the backend. */
+export async function submitAttestation(uid: string, txHash: string): Promise<{ success: boolean; easUid: string }> {
+  const res = await fetch(`${API_BASE}/v1/report/${uid}/attest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ txHash }),
+  });
+  if (!res.ok) throw await parseError(res);
+  return res.json();
 }

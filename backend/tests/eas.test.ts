@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { attest, hashReport } from "../src/services/eas";
+import { attest, hashReport, getAttestTxData } from "../src/services/eas";
 
 const runLive = process.env.RUN_EAS_LIVE_TEST === "1";
 
@@ -41,4 +41,23 @@ describe("EAS attestation", () => {
     expect(hash1).not.toBe(hash3);
     expect(hash1).toMatch(/^0x[0-9a-f]{64}$/);
   });
+
+  it("getAttestTxData produces valid transaction payload", () => {
+    const payload = getAttestTxData({
+      target: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      scanType: "contract",
+      meshScore: 950,
+      tier: "AAA",
+      topSignals: [],
+      reportMarkdown: "# Test Report\nThis is a test attestation from Meshline.",
+      reportUrl: "https://meshline.tech/scan/test",
+      scannedAt: 1717584000,
+    });
+
+    expect(payload.to).toBeDefined();
+    expect(payload.to).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(payload.data).toBeDefined();
+    expect(payload.data).toMatch(/^0x[0-9a-fA-F]+/);
+  });
 });
+
