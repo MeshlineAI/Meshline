@@ -16,7 +16,9 @@ app.set("trust proxy", 1);
 const ALLOWED_ORIGINS = [
   ...config.cors.origins,
   "https://meshline.tech",
+  "https://*.meshline.tech",
   "https://meshline.io",
+  "https://*.meshline.io",
   "http://localhost:3000",
   "http://localhost:3001",
 ];
