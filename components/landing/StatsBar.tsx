@@ -3,9 +3,9 @@ import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 const STATS = [
-  { label: "Scans today", value: 12847 },
-  { label: "Contracts scanned", value: 284901 },
-  { label: "Agent queries", value: 48291 },
+  { label: "Scans today", value: 137 },
+  { label: "Contracts scanned", value: 689 },
+  { label: "Agent queries", value: 264 },
   { label: "Risk signals", value: 22 },
 ];
 

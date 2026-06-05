@@ -9,12 +9,22 @@ import { Logo } from "@/components/brand/Logo";
 import { ConnectWallet } from "@/components/wallet/ConnectWallet";
 import { cn } from "@/lib/utils";
 
-const LINKS = [
-  { href: "/token", label: "Token", match: (p: string) => p.startsWith("/token") },
-  { href: "/dashboard", label: "Dashboard", match: (p: string) => p.startsWith("/dashboard") },
+type NavLink = {
+  href: string;
+  label: string;
+  match: (p: string) => boolean;
+  /** Open in a new browser tab, leaving the current page untouched. */
+  newTab?: boolean;
+};
+
+const LINKS: NavLink[] = [
+  { href: "/token", label: "Token", match: (p) => p.startsWith("/token") },
+  { href: "/roadmap", label: "Roadmap", match: (p) => p.startsWith("/roadmap"), newTab: true },
+  { href: "/whitepaper", label: "Whitepaper", match: (p) => p.startsWith("/whitepaper"), newTab: true },
+  { href: "/dashboard", label: "Dashboard", match: (p) => p.startsWith("/dashboard") },
 ];
 
-const MOBILE = [...LINKS, { href: "/enterprise", label: "Enterprise", match: () => false }];
+const MOBILE: NavLink[] = [...LINKS, { href: "/enterprise", label: "Enterprise", match: () => false }];
 
 export function Nav() {
   const pathname = usePathname();
@@ -101,6 +111,8 @@ export function Nav() {
               <Link
                 key={l.label}
                 href={l.href}
+                target={l.newTab ? "_blank" : undefined}
+                rel={l.newTab ? "noopener noreferrer" : undefined}
                 ref={(el) => {
                   itemRefs.current[i] = el;
                 }}
@@ -138,6 +150,8 @@ export function Nav() {
                 <Link
                   key={l.label}
                   href={l.href}
+                  target={l.newTab ? "_blank" : undefined}
+                  rel={l.newTab ? "noopener noreferrer" : undefined}
                   onClick={() => setOpen(false)}
                   className={cn(
                     "rounded-2xl px-4 py-3 text-sm transition-colors",

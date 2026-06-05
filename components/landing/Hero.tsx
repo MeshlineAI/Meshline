@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, Copy } from "lucide-react";
 import { VideoBackground } from "@/components/ui/VideoBackground";
 import { useWallet } from "@/components/wallet/WalletProvider";
 
@@ -14,10 +14,22 @@ const SIGNALS = [
   { name: "Honeypot", state: "None" },
 ];
 
+// Token contract address — drop the real 0x… CA in here at launch; until it
+// starts with "0x" the hero shows a "Coming soon" placeholder slot instead.
+const CONTRACT_ADDRESS = "Coming soon";
+const CA_IS_LIVE = CONTRACT_ADDRESS.startsWith("0x");
+
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
   const { address, openPicker } = useWallet();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+
+  const [caCopied, setCaCopied] = useState(false);
+  const copyCa = () => {
+    navigator.clipboard?.writeText(CONTRACT_ADDRESS);
+    setCaCopied(true);
+    setTimeout(() => setCaCopied(false), 1600);
+  };
 
   const videoY = useTransform(scrollYProgress, [0, 1], ["0%", "22%"]);
   const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
@@ -97,6 +109,35 @@ export function Hero() {
             <Link href="#how" className="btn-ghost">
               How it works
             </Link>
+          </motion.div>
+
+          {/* token contract address — copyable once CONTRACT_ADDRESS is live */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.26 }}
+            className="mt-8"
+          >
+            {CA_IS_LIVE ? (
+              <button
+                type="button"
+                onClick={copyCa}
+                className="group inline-flex max-w-full items-center gap-2.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-4 py-2 font-mono text-[11px] transition-colors hover:border-accent/40 hover:bg-white/[0.05]"
+              >
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-faint">CA</span>
+                <span className="truncate text-white/80">{CONTRACT_ADDRESS}</span>
+                {caCopied ? (
+                  <Check size={13} className="shrink-0 text-accent" />
+                ) : (
+                  <Copy size={13} className="shrink-0 text-muted transition-colors group-hover:text-accent" />
+                )}
+              </button>
+            ) : (
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-dashed border-white/[0.12] bg-white/[0.02] px-4 py-2 font-mono text-[11px]">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-faint">CA</span>
+                <span className="text-muted">{CONTRACT_ADDRESS}</span>
+              </div>
+            )}
           </motion.div>
 
           <motion.div
