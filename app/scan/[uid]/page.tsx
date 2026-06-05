@@ -77,7 +77,7 @@ export default async function ScanReportPage({ params }: { params: { uid: string
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
-            <PrintButton />
+            <PrintButton uid={report.id} />
             <SharePanel uid={report.id} score={report.meshScore} tier={report.tier} />
           </div>
         </div>
