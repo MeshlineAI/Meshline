@@ -9,6 +9,8 @@
 
 **AI-powered onchain risk intelligence for Base.**
 
+**Contract Address (MESH):** `0xe51190b973f32024c41471cc71c22c1f97e76b07`
+
 Paste a contract address, wallet address, or Base app URL — get a deep risk report in under 30 seconds.
 
 ---
