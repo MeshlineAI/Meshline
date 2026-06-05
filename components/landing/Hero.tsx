@@ -133,9 +133,11 @@ export function Hero() {
                 )}
               </button>
             ) : (
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-dashed border-white/[0.12] bg-white/[0.02] px-4 py-2 font-mono text-[11px]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-faint">CA</span>
-                <span className="text-muted">{CONTRACT_ADDRESS}</span>
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-accent/30 bg-accent/[0.07] px-4 py-2 font-mono text-[11px] shadow-[0_0_26px_-8px_rgba(0,229,255,0.45)]">
+                <span className="text-[10px] uppercase tracking-[0.22em] text-accent">CA</span>
+                <span className="h-3 w-px bg-white/15" />
+                <span className="text-white/85">{CONTRACT_ADDRESS}</span>
+                <span className="ml-1 h-1.5 w-1.5 shrink-0 animate-pulse-glow rounded-full bg-accent shadow-[0_0_8px] shadow-accent" />
               </div>
             )}
           </motion.div>
